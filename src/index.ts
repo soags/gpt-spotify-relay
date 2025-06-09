@@ -36,12 +36,12 @@ http("spotifyRelay", async (req, res) => {
     const path = req.query.path as string;
     if (!path) return res.status(400).json({ error: "Missing path parameter" });
 
-    const accessToken = process.env.SPOTIFY_ACCESS_TOKEN!;
+    const token = await getAccessToken();
     const params = new URLSearchParams(req.query as any).toString();
     const rawUrl = `https://api.spotify.com/v1${path}?${params}`;
 
     const response = await axios.get(rawUrl, {
-      headers: { Authorization: `Bearer ${accessToken}` },
+      headers: { Authorization: `Bearer ${token}` },
     });
 
     const simplified = await routeSpotifyRequest(path, response.data);
