@@ -1,0 +1,17 @@
+{
+  "name": "gpt-spotify-relay",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",    
+    "dev": "npm run build && npx @google-cloud/functions-framework --target=spotifyRelay"
+  },
+  "dependencies": {
+    "@google-cloud/functions-framework": "^4.0.0",
+    "axios": "^1.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.30",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
