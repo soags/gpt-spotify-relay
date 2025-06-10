@@ -1,9 +1,11 @@
 {
-  "name": "gpt-spotify-relay",
+  "name": "gpt-relay",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",    
-    "dev": "npm run build && npx @google-cloud/functions-framework --target=spotifyRelay"
+    "clean": "rimraf dist",
+    "build": "npm run clean && tsc",
+    "dev:spotify": "npm run build && set NODE_OPTIONS=--require dotenv/config && npx @google-cloud/functions-framework --target=spotifyRelay",
+    "dev:notion": "npm run build && set NODE_OPTIONS=--require dotenv/config && npx @google-cloud/functions-framework --target=notionRelay"
   },
   "dependencies": {
     "@google-cloud/functions-framework": "^4.0.0",
@@ -11,6 +13,8 @@
   },
   "devDependencies": {
     "@types/node": "^22.15.30",
+    "dotenv": "^16.5.0",
+    "rimraf": "^6.0.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   }
