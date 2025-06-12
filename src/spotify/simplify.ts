@@ -1,7 +1,7 @@
 // src/spotify/simplify.ts
 
 // GET /me/top/tracks
-export const simplifyTopTracks = (data: any) => {
+const simplifyTopTracks = (data: any) => {
   return data.items.map((item: any) => ({
     id: item.id,
     name: item.name,
@@ -12,7 +12,7 @@ export const simplifyTopTracks = (data: any) => {
 };
 
 // GET /me/top/artists
-export const simplifyTopArtists = (data: any) => {
+const simplifyTopArtists = (data: any) => {
   return data.items.map((item: any) => ({
     id: item.id,
     name: item.name,
@@ -24,7 +24,7 @@ export const simplifyTopArtists = (data: any) => {
 };
 
 // GET /me/tracks
-export const simplifySavedTracks = (data: any) => {
+const simplifySavedTracks = (data: any) => {
   return data.items.map((item: any) => ({
     id: item.track.id,
     name: item.track.name,
@@ -35,7 +35,7 @@ export const simplifySavedTracks = (data: any) => {
 };
 
 // GET /me/albums
-export const simplifySavedAlbums = (data: any) => {
+const simplifySavedAlbums = (data: any) => {
   return data.items.map((item: any) => ({
     id: item.album.id,
     name: item.album.name,
@@ -46,7 +46,7 @@ export const simplifySavedAlbums = (data: any) => {
 };
 
 // GET /me/following?type=artist
-export const simplifyFollowingArtists = (data: any) => {
+const simplifyFollowingArtists = (data: any) => {
   return data.artists.items.map((item: any) => ({
     id: item.id,
     name: item.name,
@@ -58,7 +58,7 @@ export const simplifyFollowingArtists = (data: any) => {
 };
 
 // GET /me/playlists
-export const simplifyPlaylists = (data: any) => {
+const simplifyPlaylists = (data: any) => {
   return data.items.map((item: any) => ({
     id: item.id,
     name: item.name,
@@ -69,7 +69,7 @@ export const simplifyPlaylists = (data: any) => {
 };
 
 // GET /playlists/:id
-export const simplifyPlaylist = (data: any) => {
+const simplifyPlaylist = (data: any) => {
   return {
     id: data.id,
     name: data.name,
@@ -80,7 +80,7 @@ export const simplifyPlaylist = (data: any) => {
 };
 
 // GET /playlists/:id/tracks
-export const simplifyPlaylistTracks = (data: any) => {
+const simplifyPlaylistTracks = (data: any) => {
   return data.items.map((item: any) => ({
     id: item.track.id,
     name: item.track.name,
@@ -91,7 +91,7 @@ export const simplifyPlaylistTracks = (data: any) => {
 };
 
 // GET /albums/:id
-export const simplifyAlbum = (data: any) => {
+const simplifyAlbum = (data: any) => {
   return {
     id: data.id,
     name: data.name,
@@ -102,7 +102,7 @@ export const simplifyAlbum = (data: any) => {
 };
 
 // GET /albums/:id/tracks
-export const simplifyAlbumTracks = (data: any) => {
+const simplifyAlbumTracks = (data: any) => {
   return data.items.map((item: any) => ({
     id: item.id,
     name: item.name,
@@ -113,7 +113,7 @@ export const simplifyAlbumTracks = (data: any) => {
 };
 
 // GET /tracks/:id
-export const simplifyTrack = (data: any) => {
+const simplifyTrack = (data: any) => {
   return {
     id: data.id,
     name: data.name,
@@ -124,7 +124,7 @@ export const simplifyTrack = (data: any) => {
 };
 
 // GET /artists/:id
-export const simplifyArtist = (data: any) => {
+const simplifyArtist = (data: any) => {
   return {
     id: data.id,
     name: data.name,
@@ -136,7 +136,7 @@ export const simplifyArtist = (data: any) => {
 };
 
 // GET /artists/:id/top-tracks
-export const simplifyArtistTopTracks = (data: any) => {
+const simplifyArtistTopTracks = (data: any) => {
   return data.tracks.map((track: any) => ({
     id: track.id,
     name: track.name,
@@ -156,14 +156,29 @@ const matchers: Matcher[] = [
   { test: (path) => path === "/me/top/artists", simplify: simplifyTopArtists },
   { test: (path) => path === "/me/tracks", simplify: simplifySavedTracks },
   { test: (path) => path === "/me/albums", simplify: simplifySavedAlbums },
-  { test: (path, q) => path === "/me/following" && q.type === "artist", simplify: simplifyFollowingArtists },
+  {
+    test: (path, q) => path === "/me/following" && q.type === "artist",
+    simplify: simplifyFollowingArtists,
+  },
   { test: (path) => path === "/me/playlists", simplify: simplifyPlaylists },
-  { test: (path) => /^\/playlists\/[^/]+$/.test(path), simplify: simplifyPlaylist },
-  { test: (path) => /^\/playlists\/[^/]+\/tracks$/.test(path), simplify: simplifyPlaylistTracks },
+  {
+    test: (path) => /^\/playlists\/[^/]+$/.test(path),
+    simplify: simplifyPlaylist,
+  },
+  {
+    test: (path) => /^\/playlists\/[^/]+\/tracks$/.test(path),
+    simplify: simplifyPlaylistTracks,
+  },
   { test: (path) => /^\/albums\/[^/]+$/.test(path), simplify: simplifyAlbum },
-  { test: (path) => /^\/albums\/[^/]+\/tracks$/.test(path), simplify: simplifyAlbumTracks },
+  {
+    test: (path) => /^\/albums\/[^/]+\/tracks$/.test(path),
+    simplify: simplifyAlbumTracks,
+  },
   { test: (path) => /^\/tracks\/[^/]+$/.test(path), simplify: simplifyTrack },
-  { test: (path) => /^\/artists\/[^/]+\/top-tracks$/.test(path), simplify: simplifyArtistTopTracks },
+  {
+    test: (path) => /^\/artists\/[^/]+\/top-tracks$/.test(path),
+    simplify: simplifyArtistTopTracks,
+  },
   { test: (path) => /^\/artists\/[^/]+$/.test(path), simplify: simplifyArtist },
 ];
 

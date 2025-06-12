@@ -1,18 +1,23 @@
-import axios from 'axios';
+// src/notion/notion.ts
 
-const NOTION_API_BASE = 'https://api.notion.com';
 const NOTION_API_KEY = process.env.NOTION_API_KEY;
-const NOTION_VERSION = '2022-06-28';
+const NOTION_VERSION = "2022-06-28";
 
-export const getPage = async (pageId: string) => {
-  const url = `${NOTION_API_BASE}/v1/pages/${pageId}`;
+export async function fetchNotion(
+  path: string,
+  query: any,
+  method: string = "GET",
+  body: any = null
+) {
+  const searchParams = new URLSearchParams(query);
+  const url = `https://api.notion.com${path}?${searchParams.toString()}`;
 
-  const res = await axios.get(url, {
+  return await fetch(url, {
+    method,
     headers: {
       Authorization: `Bearer ${NOTION_API_KEY}`,
-      'Notion-Version': NOTION_VERSION
-    }
+      "Notion-Version": NOTION_VERSION,
+    },
+    body: body ? JSON.stringify(body) : null,
   });
-
-  return res.data;
-};
+}
