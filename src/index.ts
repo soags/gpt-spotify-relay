@@ -1,6 +1,11 @@
-import { http } from "@google-cloud/functions-framework";
-import { notionRelay } from "./notion";
-import { spotifyRelay } from "./spotify";
+// src/index.ts
 
-http("notionRelay", notionRelay);
-http("spotifyRelay", spotifyRelay);
+import { http } from "@google-cloud/functions-framework";
+import express from "express";
+import spotifyRouter from "./spotify/router";
+
+const app = express();
+
+app.use("/spotify", spotifyRouter);
+
+http("relay", app);

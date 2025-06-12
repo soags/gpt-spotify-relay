@@ -1,3 +1,5 @@
+// src/common/auth.ts
+
 import { Request } from "@google-cloud/functions-framework";
 
 const API_KEY = process.env.API_KEY;

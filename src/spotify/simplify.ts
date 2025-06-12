@@ -1,4 +1,6 @@
-// 🎧 トップトラック（GET /me/top/tracks）
+// src/spotify/simplify.ts
+
+// GET /me/top/tracks
 export const simplifyTopTracks = (data: any) => {
   return data.items.map((item: any) => ({
     id: item.id,
@@ -9,7 +11,7 @@ export const simplifyTopTracks = (data: any) => {
   }));
 };
 
-// 🧑‍🎤 トップアーティスト（GET /me/top/artists）
+// GET /me/top/artists
 export const simplifyTopArtists = (data: any) => {
   return data.items.map((item: any) => ({
     id: item.id,
@@ -21,7 +23,7 @@ export const simplifyTopArtists = (data: any) => {
   }));
 };
 
-// 💾 保存済みトラック（GET /me/tracks）
+// GET /me/tracks
 export const simplifySavedTracks = (data: any) => {
   return data.items.map((item: any) => ({
     id: item.track.id,
@@ -32,7 +34,7 @@ export const simplifySavedTracks = (data: any) => {
   }));
 };
 
-// 💿 保存済みアルバム（GET /me/albums）
+// GET /me/albums
 export const simplifySavedAlbums = (data: any) => {
   return data.items.map((item: any) => ({
     id: item.album.id,
@@ -43,7 +45,7 @@ export const simplifySavedAlbums = (data: any) => {
   }));
 };
 
-// 📌 フォロー中アーティスト（GET /me/following?type=artist）
+// GET /me/following?type=artist
 export const simplifyFollowingArtists = (data: any) => {
   return data.artists.items.map((item: any) => ({
     id: item.id,
@@ -55,7 +57,7 @@ export const simplifyFollowingArtists = (data: any) => {
   }));
 };
 
-// 📂 自分のプレイリスト一覧（GET /me/playlists）
+// GET /me/playlists
 export const simplifyPlaylists = (data: any) => {
   return data.items.map((item: any) => ({
     id: item.id,
@@ -66,7 +68,7 @@ export const simplifyPlaylists = (data: any) => {
   }));
 };
 
-// 📁 プレイリスト詳細（GET /playlists/:id）
+// GET /playlists/:id
 export const simplifyPlaylist = (data: any) => {
   return {
     id: data.id,
@@ -77,7 +79,7 @@ export const simplifyPlaylist = (data: any) => {
   };
 };
 
-// 🎵 プレイリスト内トラック一覧（GET /playlists/:id/tracks）
+// GET /playlists/:id/tracks
 export const simplifyPlaylistTracks = (data: any) => {
   return data.items.map((item: any) => ({
     id: item.track.id,
@@ -88,7 +90,7 @@ export const simplifyPlaylistTracks = (data: any) => {
   }));
 };
 
-// 💿 アルバム詳細（GET /albums/:id）
+// GET /albums/:id
 export const simplifyAlbum = (data: any) => {
   return {
     id: data.id,
@@ -99,7 +101,7 @@ export const simplifyAlbum = (data: any) => {
   };
 };
 
-// 💽 アルバム内トラック一覧（GET /albums/:id/tracks）
+// GET /albums/:id/tracks
 export const simplifyAlbumTracks = (data: any) => {
   return data.items.map((item: any) => ({
     id: item.id,
@@ -110,7 +112,7 @@ export const simplifyAlbumTracks = (data: any) => {
   }));
 };
 
-// 🎧 トラック単体（GET /tracks/:id）
+// GET /tracks/:id
 export const simplifyTrack = (data: any) => {
   return {
     id: data.id,
@@ -121,7 +123,7 @@ export const simplifyTrack = (data: any) => {
   };
 };
 
-// 🧑‍🎤 アーティスト単体（GET /artists/:id）
+// GET /artists/:id
 export const simplifyArtist = (data: any) => {
   return {
     id: data.id,
@@ -133,7 +135,7 @@ export const simplifyArtist = (data: any) => {
   };
 };
 
-// 🧑‍🎤 アーティストのトップトラック（GET /artists/:id/top-tracks）
+// GET /artists/:id/top-tracks
 export const simplifyArtistTopTracks = (data: any) => {
   return data.tracks.map((track: any) => ({
     id: track.id,
@@ -143,3 +145,31 @@ export const simplifyArtistTopTracks = (data: any) => {
     url: track.external_urls?.spotify,
   }));
 };
+
+type Matcher = {
+  test: (path: string, query: any) => boolean;
+  simplify: (data: any) => any;
+};
+
+const matchers: Matcher[] = [
+  { test: (path) => path === "/me/top/tracks", simplify: simplifyTopTracks },
+  { test: (path) => path === "/me/top/artists", simplify: simplifyTopArtists },
+  { test: (path) => path === "/me/tracks", simplify: simplifySavedTracks },
+  { test: (path) => path === "/me/albums", simplify: simplifySavedAlbums },
+  { test: (path, q) => path === "/me/following" && q.type === "artist", simplify: simplifyFollowingArtists },
+  { test: (path) => path === "/me/playlists", simplify: simplifyPlaylists },
+  { test: (path) => /^\/playlists\/[^/]+$/.test(path), simplify: simplifyPlaylist },
+  { test: (path) => /^\/playlists\/[^/]+\/tracks$/.test(path), simplify: simplifyPlaylistTracks },
+  { test: (path) => /^\/albums\/[^/]+$/.test(path), simplify: simplifyAlbum },
+  { test: (path) => /^\/albums\/[^/]+\/tracks$/.test(path), simplify: simplifyAlbumTracks },
+  { test: (path) => /^\/tracks\/[^/]+$/.test(path), simplify: simplifyTrack },
+  { test: (path) => /^\/artists\/[^/]+\/top-tracks$/.test(path), simplify: simplifyArtistTopTracks },
+  { test: (path) => /^\/artists\/[^/]+$/.test(path), simplify: simplifyArtist },
+];
+
+export function simplifySpotifyResponse(path: string, query: any, data: any) {
+  for (const { test, simplify } of matchers) {
+    if (test(path, query)) return simplify(data);
+  }
+  return data;
+}

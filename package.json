@@ -4,12 +4,12 @@
   "scripts": {
     "clean": "rimraf dist",
     "build": "npm run clean && tsc",
-    "dev:spotify": "npm run build && set NODE_OPTIONS=--require dotenv/config && npx @google-cloud/functions-framework --target=spotifyRelay",
-    "dev:notion": "npm run build && set NODE_OPTIONS=--require dotenv/config && npx @google-cloud/functions-framework --target=notionRelay"
+    "dev": "npm run build && set NODE_OPTIONS=--require dotenv/config && npx @google-cloud/functions-framework --target=relay"
   },
   "dependencies": {
     "@google-cloud/functions-framework": "^4.0.0",
-    "axios": "^1.9.0"
+    "axios": "^1.9.0",
+    "express": "^5.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.15.30",
