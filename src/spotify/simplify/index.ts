@@ -12,10 +12,7 @@ import { usersMatchers } from "./users";
 export type Simplifier = (data: any) => any;
 
 export type Matcher = {
-  test: (
-    path: RequestConfig["method"],
-    query: RequestConfig["query"]
-  ) => boolean;
+  test: (path: RequestConfig["path"], query: RequestConfig["query"]) => boolean;
   simplify: Simplifier;
 };
 
@@ -29,9 +26,18 @@ const matchers: Matcher[] = [
   ...usersMatchers,
 ];
 
-export function getSimplifier(config: RequestConfig): Simplifier | null {
-  for (const { test, simplify } of matchers) {
-    if (test(config.path, config.query)) return simplify;
+export function getSimplifier({
+  method,
+  path,
+  query,
+}: RequestConfig): Simplifier | null {
+  if (method !== "GET") {
+    return null;
   }
+
+  for (const { test, simplify } of matchers) {
+    if (test(path, query)) return simplify;
+  }
+
   return null;
 }

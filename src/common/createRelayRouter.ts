@@ -3,7 +3,7 @@
 import express from "express";
 
 export type RequestConfig = {
-  method: string;
+  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   path: string;
   query?: Record<string, string>;
   body?: Record<string, any>;
@@ -40,16 +40,32 @@ function parseRequestConfig(body: unknown): RequestConfig {
 
   const config = body as Record<string, unknown>;
 
+  // method
   if (typeof config.method !== "string") {
     throw new Error(
       'Invalid RequestConfig: "method" is required and must be a string.'
     );
   }
+
+  const upperCaseMethod = config.method.toUpperCase();
+  if (!["GET", "POST", "PUT", "DELETE", "PATCH"].includes(upperCaseMethod)) {
+    throw new Error(
+      'Invalid RequestConfig: "method" must be "GET", "POST", "PUT", "DELETE", or "PATCH". (Case-insensitive)'
+    );
+  }
+
+  // path
   if (typeof config.path !== "string") {
     throw new Error(
       'Invalid RequestConfig: "path" is required and must be a string.'
     );
   }
+
+  if (config.path.includes("?")) {
+    throw new Error("Invalid 'path'. Do not include query parameters in it.");
+  }
+
+  // query
   if (config.query !== undefined) {
     if (typeof config.query !== "object" || config.query === null) {
       throw new Error(
@@ -57,6 +73,8 @@ function parseRequestConfig(body: unknown): RequestConfig {
       );
     }
   }
+
+  // body
   if (config.body !== undefined) {
     if (typeof config.body !== "object" || config.body === null) {
       throw new Error(
@@ -65,12 +83,8 @@ function parseRequestConfig(body: unknown): RequestConfig {
     }
   }
 
-  if (config.path.includes("?")) {
-    throw new Error("Invalid 'path'. Do not include query parameters in it.");
-  }
-
   return {
-    method: config.method,
+    method: upperCaseMethod as RequestConfig["method"],
     path: config.path,
     query: config.query as Record<string, string | number> | undefined,
     body: config.body as Record<string, any> | undefined,

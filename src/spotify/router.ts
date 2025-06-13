@@ -5,16 +5,7 @@ import { createRelayRouter } from "../common/createRelayRouter";
 import { getSimplifier } from "./simplify";
 
 export default createRelayRouter(async (config, req, res) => {
-  const { method, path, query } = config;
-
-  if (config.method !== "GET") {
-    console.error("Unsupported method:", method, "for path:", path);
-    res.status(405).json({
-      error: "METHOD_NOT_ALLOWED",
-      message: `The method ${config.method} is not supported for this endpoint.`,
-      details: config,
-    });
-  }
+  const { path, query } = config;
 
   try {
     const simplifier = getSimplifier(config);
