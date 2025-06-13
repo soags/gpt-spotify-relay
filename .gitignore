@@ -3,3 +3,4 @@ dist
 .env
 deploy.bat
 test.http
+serviceAccountKey.json
