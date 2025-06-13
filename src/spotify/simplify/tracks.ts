@@ -13,40 +13,42 @@ export const tracksMatchers: Matcher[] = [
     simplify: simplifyTrackFull,
   },
   {
-    test: (path) => /^\/audio-analysis\/[^/]+$/.test(path),
-    simplify: simplifyAudioAnalysis,
-  },
-  {
-    test: (path) => path === "/audio-features",
-    simplify: simplifyMultipleAudioFeatures,
+    test: (path) => /^\/tracks$/.test(path),
+    simplify: simplifyMultipleTracks,
   },
   {
     test: (path) => /^\/audio-features$/.test(path),
     simplify: simplifyMultipleAudioFeatures,
   },
+  {
+    test: (path) => /^\/audio-features\/[^/]+$/.test(path),
+    simplify: simplifyAudioFeatures,
+  },
+  {
+    test: (path) => /^\/audio-analysis\/[^/]+$/.test(path),
+    simplify: simplifyAudioAnalysis,
+  },
 ];
 
 export function simplifyTracktSimplified(
-  track: SpotifyApi.TrackObjectSimplified
+  res: SpotifyApi.TrackObjectSimplified
 ) {
   return {
-    id: track.id,
-    name: track.name,
-    artists: track.artists.map(simplifyArtistSimplified),
-    duration_ms: track.duration_ms,
-    explicit: track.explicit,
+    id: res.id,
+    name: res.name,
+    artists: res.artists.map(simplifyArtistSimplified),
+    duration_ms: res.duration_ms,
+    explicit: res.explicit,
   };
 }
 
 // GET /me/tracks
-export function simplifySavedTracks(
-  savedTracks: SpotifyApi.UsersSavedTracksResponse
-) {
+export function simplifySavedTracks(res: SpotifyApi.UsersSavedTracksResponse) {
   return {
-    next: savedTracks.next,
-    previous: savedTracks.previous,
-    total: savedTracks.total,
-    items: savedTracks.items.map((item) => ({
+    next: res.next,
+    previous: res.previous,
+    total: res.total,
+    items: res.items.map((item) => ({
       track: simplifyTrackFull(item.track),
       added_at: item.added_at,
     })),
@@ -54,49 +56,52 @@ export function simplifySavedTracks(
 }
 
 // GET /tracks/:id
-export function simplifyTrackFull(track: SpotifyApi.TrackObjectFull) {
+export function simplifyTrackFull(res: SpotifyApi.TrackObjectFull) {
   return {
-    popularity: track.popularity,
-    isrc: track.external_ids.isrc,
-    ...simplifyTracktSimplified(track),
+    popularity: res.popularity,
+    isrc: res.external_ids.isrc,
+    ...simplifyTracktSimplified(res),
+  };
+}
+
+// Get /tracks
+export function simplifyMultipleTracks(res: SpotifyApi.MultipleTracksResponse) {
+  return {
+    tracks: res.tracks.map(simplifyTrackFull),
   };
 }
 
 // GET /audio-features/:id
-export function simplifyAudioFeatures(
-  audioFeatures: SpotifyApi.AudioFeaturesResponse
-) {
+export function simplifyAudioFeatures(res: SpotifyApi.AudioFeaturesResponse) {
   return {
-    danceability: audioFeatures.danceability,
-    energy: audioFeatures.energy,
-    valence: audioFeatures.valence,
-    tempo: audioFeatures.tempo,
-    acousticness: audioFeatures.acousticness,
-    instrumentalness: audioFeatures.instrumentalness,
-    speechiness: audioFeatures.speechiness,
-    liveness: audioFeatures.liveness,
-    loudness: audioFeatures.loudness,
-    mode: audioFeatures.mode,
-    key: audioFeatures.key,
-    time_signature: audioFeatures.time_signature,
-    duration_ms: audioFeatures.duration_ms,
+    danceability: res.danceability,
+    energy: res.energy,
+    valence: res.valence,
+    tempo: res.tempo,
+    acousticness: res.acousticness,
+    instrumentalness: res.instrumentalness,
+    speechiness: res.speechiness,
+    liveness: res.liveness,
+    loudness: res.loudness,
+    mode: res.mode,
+    key: res.key,
+    time_signature: res.time_signature,
+    duration_ms: res.duration_ms,
   };
 }
 
 // GET /audio-features
 export function simplifyMultipleAudioFeatures(
-  audioFeatures: SpotifyApi.MultipleAudioFeaturesResponse
+  res: SpotifyApi.MultipleAudioFeaturesResponse
 ) {
   return {
-    audio_features: audioFeatures.audio_features.map(simplifyAudioFeatures),
+    audio_features: res.audio_features.map(simplifyAudioFeatures),
   };
 }
 
 // GET /audio-analysis/{id}
-export function simplifyAudioAnalysis(
-  audioAnalysis: SpotifyApi.AudioAnalysisResponse
-) {
-  const { track } = audioAnalysis;
+export function simplifyAudioAnalysis(res: SpotifyApi.AudioAnalysisResponse) {
+  const { track } = res;
   return {
     track: {
       duration: track.duration,

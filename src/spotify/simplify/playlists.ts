@@ -19,43 +19,41 @@ export const playlistMatchers: Matcher[] = [
 ];
 
 export function simplifyPlaylistSimplified(
-  playlist: SpotifyApi.PlaylistObjectSimplified
+  res: SpotifyApi.PlaylistObjectSimplified
 ) {
   return {
-    id: playlist.id,
-    name: playlist.name,
-    tracks: playlist.tracks.total,
+    id: res.id,
+    name: res.name,
+    tracks: res.tracks.total,
   };
 }
 
 // GET /me/playlists
 export function simplifyUserPlaylists(
-  playlists: SpotifyApi.ListOfCurrentUsersPlaylistsResponse
+  res: SpotifyApi.ListOfCurrentUsersPlaylistsResponse
 ) {
   return {
-    next: playlists.next,
-    previous: playlists.previous,
-    total: playlists.total,
-    items: playlists.items.map(simplifyPlaylistSimplified),
+    next: res.next,
+    previous: res.previous,
+    total: res.total,
+    items: res.items.map(simplifyPlaylistSimplified),
   };
 }
 
 // GET /playlists/:id
-export function simplifyPlaylistFull(playlist: SpotifyApi.PlaylistObjectFull) {
+export function simplifyPlaylistFull(res: SpotifyApi.PlaylistObjectFull) {
   return {
-    ...simplifyPlaylistSimplified(playlist),
+    ...simplifyPlaylistSimplified(res),
   };
 }
 
 // GET /playlists/:id/tracks
-export function simplifyPlaylistTracks(
-  tracks: SpotifyApi.PlaylistTrackResponse
-) {
+export function simplifyPlaylistTracks(res: SpotifyApi.PlaylistTrackResponse) {
   return {
-    next: tracks.next,
-    previous: tracks.previous,
-    total: tracks.total,
-    items: tracks.items.map((item) => ({
+    next: res.next,
+    previous: res.previous,
+    total: res.total,
+    items: res.items.map((item) => ({
       track: item.track ? simplifyTrackFull(item.track) : null,
       added_at: item.added_at,
     })),

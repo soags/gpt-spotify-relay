@@ -6,12 +6,16 @@ import { simplifyTrackFull } from "./tracks";
 export const artistsMatchers: Matcher[] = [
   {
     test: (path, q) =>
-      path === "/me/following" && q !== undefined && q.type === "artist",
+      /^\/me\/following\?type=artist$/.test(path) && q?.type === "artist",
     simplify: simplifyFollowingArtists,
   },
   {
     test: (path) => /^\/artists\/[^/]+$/.test(path),
     simplify: simplifyArtistFull,
+  },
+  {
+    test: (path) => /^\/artists$/.test(path),
+    simplify: simplifyMultipleArtists,
   },
   {
     test: (path) => /^\/artists\/[^/]+\/top-tracks$/.test(path),
@@ -20,19 +24,19 @@ export const artistsMatchers: Matcher[] = [
 ];
 
 export function simplifyArtistSimplified(
-  artist: SpotifyApi.ArtistObjectSimplified
+  res: SpotifyApi.ArtistObjectSimplified
 ) {
   return {
-    id: artist.id,
-    name: artist.name,
+    id: res.id,
+    name: res.name,
   };
 }
 
 // GET /me/following?type=artist
 export function simplifyFollowingArtists(
-  followingArtists: SpotifyApi.UsersFollowedArtistsResponse
+  res: SpotifyApi.UsersFollowedArtistsResponse
 ) {
-  const { artists } = followingArtists;
+  const { artists } = res;
   return {
     artists: {
       next: artists.next,
@@ -44,20 +48,29 @@ export function simplifyFollowingArtists(
 }
 
 // GET /artists/:id
-export function simplifyArtistFull(artist: SpotifyApi.ArtistObjectFull) {
+export function simplifyArtistFull(res: SpotifyApi.ArtistObjectFull) {
   return {
-    genres: artist.genres,
-    followers: artist.followers.total,
-    popularity: artist.popularity,
-    ...simplifyArtistSimplified(artist),
+    genres: res.genres,
+    followers: res.followers.total,
+    popularity: res.popularity,
+    ...simplifyArtistSimplified(res),
+  };
+}
+
+// GET /artists
+export function simplifyMultipleArtists(
+  res: SpotifyApi.MultipleArtistsResponse
+) {
+  return {
+    artists: res.artists.map(simplifyArtistFull),
   };
 }
 
 // GET /artists/:id/top-tracks
 export function simplifyArtistTopTracks(
-  artistTopTracks: SpotifyApi.ArtistsTopTracksResponse
+  res: SpotifyApi.ArtistsTopTracksResponse
 ) {
   return {
-    tracks: artistTopTracks.tracks.map(simplifyTrackFull),
+    tracks: res.tracks.map(simplifyTrackFull),
   };
 }

@@ -5,19 +5,19 @@ import { simplifyTrackFull } from "./tracks";
 
 export const playersMatchers: Matcher[] = [
   {
-    test: (path) => path === "/me/player/recently-played",
+    test: (path) => /^\/me\/player\/recently-played$/.test(path),
     simplify: simplifyRecentlyPlayed,
   },
 ];
 
 export function simplifyRecentlyPlayed(
-  recentlyPlayed: SpotifyApi.UsersRecentlyPlayedTracksResponse
+  res: SpotifyApi.UsersRecentlyPlayedTracksResponse
 ) {
   return {
-    next: recentlyPlayed.next,
-    cursors: recentlyPlayed.cursors,
-    total: recentlyPlayed.total,
-    items: recentlyPlayed.items.map((item) => ({
+    next: res.next,
+    cursors: res.cursors,
+    total: res.total,
+    items: res.items.map((item) => ({
       track: simplifyTrackFull(item.track),
       played_at: item.played_at,
     })),

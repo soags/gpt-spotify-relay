@@ -4,13 +4,13 @@ import { Matcher } from ".";
 
 export const genresMatchers: Matcher[] = [
   {
-    test: (path) => path === "/recommendations/available-genre-seeds",
+    test: (path) => /^\/recommendations\/available-genre-seeds$/.test(path),
     simplify: simplifyAvailableGenreSeeds,
   },
 ];
 
 export function simplifyAvailableGenreSeeds(
-  genre: SpotifyApi.AvailableGenreSeedsResponse
+  res: SpotifyApi.AvailableGenreSeedsResponse
 ) {
-  return genre;
+  return res;
 }

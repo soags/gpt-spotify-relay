@@ -6,47 +6,43 @@ import { simplifyTrackFull } from "./tracks";
 
 export const usersMatchers: Matcher[] = [
   {
-    test: (path) => path === "/me",
+    test: (path) => /^\/me$/.test(path),
     simplify: simplifyUser,
   },
   {
-    test: (path) => path === "/me/top/tracks",
+    test: (path) => /^\/me\/top\/tracks$/.test(path),
     simplify: simplifyTopTracks,
   },
   {
-    test: (path) => path === "/me/top/artists",
+    test: (path) => /^\/me\/top\/artists$/.test(path),
     simplify: simplifyTopArtists,
   },
 ];
 
 // GET /me
-export function simplifyUser(user: SpotifyApi.UserObjectPublic) {
+export function simplifyUser(res: SpotifyApi.UserObjectPublic) {
   return {
-    id: user.id,
-    display_name: user.display_name,
+    id: res.id,
+    display_name: res.display_name,
   };
 }
 
 // GET /me/top/tracks
-export function simplifyTopTracks(
-  topTracks: SpotifyApi.UsersTopTracksResponse
-) {
+export function simplifyTopTracks(res: SpotifyApi.UsersTopTracksResponse) {
   return {
-    next: topTracks.next,
-    previous: topTracks.previous,
-    total: topTracks.total,
-    items: topTracks.items.map(simplifyTrackFull),
+    next: res.next,
+    previous: res.previous,
+    total: res.total,
+    items: res.items.map(simplifyTrackFull),
   };
 }
 
 // GET /me/top/artists
-export function simplifyTopArtists(
-  topArtists: SpotifyApi.UsersTopArtistsResponse
-) {
+export function simplifyTopArtists(res: SpotifyApi.UsersTopArtistsResponse) {
   return {
-    next: topArtists.next,
-    previous: topArtists.previous,
-    total: topArtists.total,
-    items: topArtists.items.map(simplifyArtistFull),
+    next: res.next,
+    previous: res.previous,
+    total: res.total,
+    items: res.items.map(simplifyArtistFull),
   };
 }
