@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "@google-cloud/functions-framework": "^4.0.0",
-    "axios": "^1.9.0",
+    "@types/spotify-api": "^0.0.25",
     "express": "^5.1.0"
   },
   "devDependencies": {
