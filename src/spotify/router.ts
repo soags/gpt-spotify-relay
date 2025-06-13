@@ -24,21 +24,23 @@ export default createRelayRouter(async (config, req, res) => {
     }
 
     const response = await getSpotify(path, query);
+    const json = await response.json();
 
-    const data = await response.json();
     if (!response.ok) {
       console.error("Spotify API error:", {
         path,
         query,
         status: response.status,
-        data,
       });
-      res.status(response.status).json(data);
+      res.status(response.status).json(json);
       return;
     }
 
-    const simplified = simplifier(data);
-    res.status(response.status).json(simplified);
+    const simplified = simplifier(json);
+
+    res.status(response.status).json({
+      data: simplified,
+    });
   } catch (err) {
     console.error("Spotify relay error:", {
       path,
