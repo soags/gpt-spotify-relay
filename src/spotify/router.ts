@@ -2,7 +2,7 @@
 
 import { fetchSpotify } from "./spotify";
 import { createRelayRouter } from "../common/createRelayRouter";
-import { simplifySpotifyResponse } from "./simplify";
+import { getSimplifier } from "./simplify";
 
 export default createRelayRouter(
   (q: any) => {
@@ -14,6 +14,23 @@ export default createRelayRouter(
   },
   async ({ path, query }, req, res) => {
     try {
+      const simplifier = getSimplifier(path, query);
+      if (!simplifier) {
+        console.error("No simplifier found for path:", path, "query:", query);
+        res.status(404).json({
+          error: "SIMPLIFIER_NOT_FOUND",
+          message:
+            "No specific simplification logic was found for the given API path and query parameters.",
+          details: {
+            requested_path: path,
+            requested_query: query,
+          },
+          action_required:
+            "Please verify the API endpoint path and query parameters against the available documentation or supported patterns.",
+        });
+        return;
+      }
+
       const response = await fetchSpotify(path, query);
       const data = await response.json();
       if (!response.ok) {
@@ -27,7 +44,7 @@ export default createRelayRouter(
         return;
       }
 
-      const simplified = simplifySpotifyResponse(path, query, data);
+      const simplified = simplifier(data);
       res.status(response.status).json(simplified);
     } catch (err) {
       console.error("Spotify relay error:", {

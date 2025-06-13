@@ -4,9 +4,11 @@ import { playlistMatchers } from "./playlists";
 import { tracksMatchers } from "./tracks";
 import { usersMatchers } from "./users";
 
+export type Simplifier = (data: any) => any;
+
 export type Matcher = {
   test: (path: string, query: any) => boolean;
-  simplify: (data: any) => any;
+  simplify: Simplifier;
 };
 
 const matchers: Matcher[] = [
@@ -17,9 +19,9 @@ const matchers: Matcher[] = [
   ...usersMatchers,
 ];
 
-export function simplifySpotifyResponse(path: string, query: any, data: any) {
+export function getSimplifier(path: string, query: any): Simplifier | null {
   for (const { test, simplify } of matchers) {
-    if (test(path, query)) return simplify(data);
+    if (test(path, query)) return simplify;
   }
-  return data;
+  return null;
 }

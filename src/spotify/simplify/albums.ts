@@ -8,16 +8,8 @@ export const albumsMatchers: Matcher[] = [
     simplify: simplifyAlbumFull,
   },
   {
-    test: (path, q) => path === "/albums" && Array.isArray(q.ids),
-    simplify: simplifyMultipleAlbumsFull,
-  },
-  {
     test: (path) => /^\/albums\/[^/]+\/tracks$/.test(path),
     simplify: simplifyAlbumTracks,
-  },
-  {
-    test: (path) => /^\/me\/albums$/.test(path),
-    simplify: simplifySavedAlbums,
   },
 ];
 
@@ -42,15 +34,6 @@ export function simplifyAlbumFull(album: SpotifyApi.AlbumObjectFull) {
   };
 }
 
-// GET /albums?ids=:ids
-export function simplifyMultipleAlbumsFull(
-  albums: SpotifyApi.MultipleAlbumsResponse
-) {
-  return {
-    albums: albums.albums.map(simplifyAlbumFull),
-  };
-}
-
 // GET /albums/:id/tracks
 export function simplifyAlbumTracks(
   albumTracks: SpotifyApi.AlbumTracksResponse
@@ -60,20 +43,5 @@ export function simplifyAlbumTracks(
     previous: albumTracks.previous,
     total: albumTracks.total,
     items: albumTracks.items.map(simplifyTracktSimplified),
-  };
-}
-
-// GET /me/albums
-export function simplifySavedAlbums(
-  savedAlbums: SpotifyApi.UsersSavedAlbumsResponse
-) {
-  return {
-    next: savedAlbums.next,
-    previous: savedAlbums.previous,
-    total: savedAlbums.total,
-    items: savedAlbums.items.map((item) => ({
-      album: simplifyAlbumFull(item.album),
-      added_at: item.added_at,
-    })),
   };
 }

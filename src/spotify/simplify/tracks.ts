@@ -3,16 +3,12 @@ import { simplifyArtistSimplified } from "./artists";
 
 export const tracksMatchers: Matcher[] = [
   {
-    test: (path) => /^\/tracks\/[^/]+$/.test(path),
-    simplify: simplifyTrackFull,
-  },
-  {
-    test: (path, q) => path === "/tracks" && Array.isArray(q.ids),
-    simplify: simplifyTracksFull,
-  },
-  {
     test: (path) => /^\/me\/tracks$/.test(path),
     simplify: simplifySavedTracks,
+  },
+  {
+    test: (path) => /^\/tracks\/[^/]+$/.test(path),
+    simplify: simplifyTrackFull,
   },
 ];
 
@@ -28,22 +24,6 @@ export function simplifyTracktSimplified(
   };
 }
 
-// GET /tracks/:id
-export function simplifyTrackFull(track: SpotifyApi.TrackObjectFull) {
-  return {
-    popularity: track.popularity,
-    isrc: track.external_ids.isrc,
-    ...simplifyTracktSimplified(track),
-  };
-}
-
-// GET /tracks?ids=:ids
-export function simplifyTracksFull(tracks: SpotifyApi.MultipleTracksResponse) {
-  return {
-    tracks: tracks.tracks.map(simplifyTrackFull),
-  };
-}
-
 // GET /me/tracks
 export function simplifySavedTracks(
   savedTracks: SpotifyApi.UsersSavedTracksResponse
@@ -56,5 +36,14 @@ export function simplifySavedTracks(
       track: simplifyTrackFull(item.track),
       added_at: item.added_at,
     })),
+  };
+}
+
+// GET /tracks/:id
+export function simplifyTrackFull(track: SpotifyApi.TrackObjectFull) {
+  return {
+    popularity: track.popularity,
+    isrc: track.external_ids.isrc,
+    ...simplifyTracktSimplified(track),
   };
 }

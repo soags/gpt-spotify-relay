@@ -4,16 +4,12 @@ import { simplifyTrackFull } from "./tracks";
 
 export const artistsMatchers: Matcher[] = [
   {
+    test: (path, q) => path === "/me/following" && q.type === "artist",
+    simplify: simplifyFollowingArtists,
+  },
+  {
     test: (path) => /^\/artists\/[^/]+$/.test(path),
     simplify: simplifyArtistFull,
-  },
-  {
-    test: (path, q) => path === "/artists" && Array.isArray(q.ids),
-    simplify: simplifyMultipleArtistsFull,
-  },
-  {
-    test: (path) => /^\/artists\/[^/]+\/albums$/.test(path),
-    simplify: simplifyArtistAlbums,
   },
   {
     test: (path) => /^\/artists\/[^/]+\/top-tracks$/.test(path),
@@ -30,6 +26,21 @@ export function simplifyArtistSimplified(
   };
 }
 
+// GET /me/following?type=artist
+export function simplifyFollowingArtists(
+  followingArtists: SpotifyApi.UsersFollowedArtistsResponse
+) {
+  const { artists } = followingArtists;
+  return {
+    artists: {
+      next: artists.next,
+      cursors: artists.cursors,
+      total: artists.total,
+      items: artists.items.map(simplifyArtistFull),
+    },
+  };
+}
+
 // GET /artists/:id
 export function simplifyArtistFull(artist: SpotifyApi.ArtistObjectFull) {
   return {
@@ -37,27 +48,6 @@ export function simplifyArtistFull(artist: SpotifyApi.ArtistObjectFull) {
     followers: artist.followers.total,
     popularity: artist.popularity,
     ...simplifyArtistSimplified(artist),
-  };
-}
-
-// GET /artists?ids=:ids
-export function simplifyMultipleArtistsFull(
-  artists: SpotifyApi.MultipleArtistsResponse
-) {
-  return {
-    artists: artists.artists.map(simplifyArtistFull),
-  };
-}
-
-// GET /artists/:id/albums
-export function simplifyArtistAlbums(
-  artistAlbums: SpotifyApi.ArtistsAlbumsResponse
-) {
-  return {
-    next: artistAlbums.next,
-    previous: artistAlbums.previous,
-    total: artistAlbums.total,
-    items: artistAlbums.items.map(simplifyAlbumSimplified),
   };
 }
 
