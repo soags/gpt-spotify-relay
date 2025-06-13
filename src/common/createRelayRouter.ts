@@ -23,52 +23,61 @@ export function createRelayRouter<T>(handler: RequestHandler): express.Router {
       const config = parseRequestConfig(req.body);
       await handler(config, req, res);
     } catch (err) {
-      res.status(500).json({
-        error: "Internal error",
-        detail: err instanceof Error ? err.message : String(err),
-      });
+      const message = err instanceof Error ? err.message : String(err);
+
+      if (err instanceof ValidationError) {
+        res.status(400).json({ error: "Bad Request", detail: message });
+      } else {
+        res.status(500).json({ error: "Internal error", detail: message });
+      }
     }
   });
 
   return router;
 }
 
+class ValidationError extends Error {}
+
 function parseRequestConfig(body: unknown): RequestConfig {
   if (typeof body !== "object" || body === null) {
-    throw new Error("Invalid input: Expected an object for RequestConfig.");
+    throw new ValidationError(
+      "Invalid input: Expected an object for RequestConfig."
+    );
   }
 
   const config = body as Record<string, unknown>;
 
   // method
   if (typeof config.method !== "string") {
-    throw new Error(
+    throw new ValidationError(
       'Invalid RequestConfig: "method" is required and must be a string.'
     );
   }
 
   const upperCaseMethod = config.method.toUpperCase();
   if (!["GET", "POST", "PUT", "DELETE", "PATCH"].includes(upperCaseMethod)) {
-    throw new Error(
+    throw new ValidationError(
       'Invalid RequestConfig: "method" must be "GET", "POST", "PUT", "DELETE", or "PATCH". (Case-insensitive)'
     );
   }
 
   // path
   if (typeof config.path !== "string") {
-    throw new Error(
+    throw new ValidationError(
       'Invalid RequestConfig: "path" is required and must be a string.'
     );
   }
 
   if (config.path.includes("?")) {
-    throw new Error("Invalid 'path'. Do not include query parameters in it.");
+    throw new ValidationError(
+      "Invalid 'path'. Do not include query parameters in it."
+    );
   }
 
   // query
   if (config.query !== undefined) {
     if (typeof config.query !== "object" || config.query === null) {
-      throw new Error(
+      throw new ValidationError(
         'Invalid RequestConfig: "query" must be an object if provided.'
       );
     }
@@ -77,7 +86,7 @@ function parseRequestConfig(body: unknown): RequestConfig {
   // body
   if (config.body !== undefined) {
     if (typeof config.body !== "object" || config.body === null) {
-      throw new Error(
+      throw new ValidationError(
         'Invalid RequestConfig: "body" must be an object if provided.'
       );
     }
