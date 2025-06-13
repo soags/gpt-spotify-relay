@@ -1,3 +1,6 @@
+// src/spotify/simplify/index.ts
+
+import { RequestConfig } from "../../common/createRelayRouter";
 import { albumsMatchers } from "./albums";
 import { artistsMatchers } from "./artists";
 import { genresMatchers } from "./genres";
@@ -9,7 +12,10 @@ import { usersMatchers } from "./users";
 export type Simplifier = (data: any) => any;
 
 export type Matcher = {
-  test: (path: string, query: any) => boolean;
+  test: (
+    path: RequestConfig["method"],
+    query: RequestConfig["query"]
+  ) => boolean;
   simplify: Simplifier;
 };
 
@@ -23,9 +29,9 @@ const matchers: Matcher[] = [
   ...usersMatchers,
 ];
 
-export function getSimplifier(path: string, query: any): Simplifier | null {
+export function getSimplifier(config: RequestConfig): Simplifier | null {
   for (const { test, simplify } of matchers) {
-    if (test(path, query)) return simplify;
+    if (test(config.path, config.query)) return simplify;
   }
   return null;
 }

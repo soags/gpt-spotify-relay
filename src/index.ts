@@ -6,6 +6,8 @@ import spotifyRouter from "./spotify/router";
 
 const app = express();
 
+app.use(express.json());
+
 app.use("/spotify", spotifyRouter);
 
 http("relay", app);

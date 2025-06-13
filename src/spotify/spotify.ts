@@ -24,7 +24,10 @@ async function getAccessToken(): Promise<string> {
   return data.access_token;
 }
 
-export async function fetchSpotify(path: string, query: any) {
+export async function getSpotify(
+  path: string,
+  query: Record<string, string> | undefined
+) {
   const searchParams = new URLSearchParams(query);
   const url = `https://api.spotify.com/v1${path}?${searchParams.toString()}`;
 

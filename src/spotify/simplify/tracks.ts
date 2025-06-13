@@ -1,3 +1,5 @@
+// src/spotify/simplify/tracks.ts
+
 import { Matcher } from ".";
 import { simplifyArtistSimplified } from "./artists";
 
@@ -15,7 +17,7 @@ export const tracksMatchers: Matcher[] = [
     simplify: simplifyAudioAnalysis,
   },
   {
-    test: (path, q) => path === "/audio-features",
+    test: (path) => path === "/audio-features",
     simplify: simplifyMultipleAudioFeatures,
   },
   {

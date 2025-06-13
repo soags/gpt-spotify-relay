@@ -1,10 +1,12 @@
+// src/spotify/simplify/artists.ts
+
 import { Matcher } from ".";
-import { simplifyAlbumSimplified } from "./albums";
 import { simplifyTrackFull } from "./tracks";
 
 export const artistsMatchers: Matcher[] = [
   {
-    test: (path, q) => path === "/me/following" && q.type === "artist",
+    test: (path, q) =>
+      path === "/me/following" && q !== undefined && q.type === "artist",
     simplify: simplifyFollowingArtists,
   },
   {
