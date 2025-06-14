@@ -1,3 +1,5 @@
+// src/controllers/albumsController.ts
+
 import { Request, Response } from "express";
 import { db } from "../lib/firestore";
 import { classifyItems, toCountResponse } from "../services/classifyItems";
