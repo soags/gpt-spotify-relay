@@ -1,6 +1,6 @@
-// src/utils/artistGenres.ts
+// src/services/artistGenres.ts
 
-import { db } from "./firestore";
+import { db } from "../cache/firestore";
 
 const COLLECTION = "artist_genres";
 
