@@ -1,4 +1,4 @@
-// src/api/spotify.ts
+// src/lib/spotify.ts
 
 import { UnauthorizedError } from "../types/error";
 
@@ -8,38 +8,41 @@ const SPOTIFY_REFRESH_TOKEN = process.env.SPOTIFY_REFRESH_TOKEN!;
 const SPOTIFY_API_BASE_URL = "https://api.spotify.com/v1";
 
 export async function getUsersSavedTracks(
-  token: string,
-  options: { limit: number; offset?: number }
-): Promise<SpotifyApi.UsersSavedTracksResponse> {
+  options: { limit: number; offset?: number },
+  token: string
+) {
   const url = new URL(`${SPOTIFY_API_BASE_URL}/me/tracks`);
 
   if (options) {
     const searchParams = new URLSearchParams();
-    if (typeof options.limit === "number") {
-      searchParams.append("limit", String(options.limit));
-    }
+    searchParams.append("limit", String(options.limit));
     if (typeof options.offset === "number") {
       searchParams.append("offset", String(options.offset));
     }
     url.search = searchParams.toString();
   }
 
-  const response = await fetch(url.toString(), {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-  });
+  const response: SpotifyApi.UsersSavedTracksResponse = await fetchSpotifyApi(
+    url,
+    token
+  );
 
-  if (!response.ok) {
-    const errorData: { error?: { message: string; status: number } } =
-      await response.json();
-    const errorMessage = errorData.error?.message || response.statusText;
-    const errorStatus = errorData.error?.status || response.status;
-    throw new Error(`Spotify API error: ${errorStatus} - ${errorMessage}`);
-  }
+  return response;
+}
 
-  return await response.json();
+export async function GetSeveralArtists(
+  options: { ids: string[] },
+  token: string
+) {
+  const url = new URL(`${SPOTIFY_API_BASE_URL}/artists`);
+  url.searchParams.append("ids", options.ids.join(","));
+
+  const response: SpotifyApi.MultipleArtistsResponse = await fetchSpotifyApi(
+    url,
+    token
+  );
+
+  return response.artists;
 }
 
 export async function getAccessToken(): Promise<string> {
@@ -71,4 +74,24 @@ export async function getAccessToken(): Promise<string> {
 
   const data = await response.json();
   return data.access_token;
+}
+
+async function fetchSpotifyApi(url: URL, token: string) {
+  console.log(`Fetching Spotify API: ${url.toString()}`);
+  const response = await fetch(url.toString(), {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const errorData: { error?: { message: string; status: number } } =
+      await response.json();
+    const errorMessage = errorData.error?.message || response.statusText;
+    const errorStatus = errorData.error?.status || response.status;
+    throw new Error(`Spotify API error: ${errorStatus} - ${errorMessage}`);
+  }
+
+  return await response.json();
 }

@@ -1,7 +1,7 @@
 // src/cache/tracks.ts
 
 import { Track } from "../types/tracks";
-import { db } from "./firestore";
+import { db } from "../lib/firestore";
 
 const COLLECTION = "saved_tracks";
 
