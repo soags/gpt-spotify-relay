@@ -6,6 +6,7 @@ import * as artistsController from "../controllers/artistsController";
 import * as followingController from "../controllers/followingController";
 import * as playlistsController from "../controllers/playlistsController";
 import * as albumsController from "../controllers/albumsController";
+import * as analysisContoller from "../controllers/analysisContoller";
 
 export const spotifyRouter = Router();
 
@@ -23,3 +24,5 @@ spotifyRouter.post("/playlists/refresh", playlistsController.refreshPlaylists);
 
 spotifyRouter.get("/albums", albumsController.getAlbums);
 spotifyRouter.post("/albums/refresh", albumsController.refreshAlbums);
+
+spotifyRouter.get("/analysis/genres", analysisContoller.getGenreAnalysis);
