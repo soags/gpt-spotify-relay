@@ -1,5 +1,6 @@
 // src/services/spotifyRelayDispatcher.ts
 
+import { match, MatchFunction } from "path-to-regexp";
 import { fetchSpotify } from "../api/spotify";
 import {
   simplifyAlbumFull,
@@ -10,7 +11,6 @@ import {
 import {
   simplifyFollowingArtists,
   simplifyArtistFull,
-  simplifyMultipleArtists,
   simplifyArtistTopTracks,
 } from "../simplify/artists";
 import { simplifyAvailableGenreSeeds } from "../simplify/genres";
@@ -42,118 +42,116 @@ import {
 } from "./artistGenres";
 
 type RelayRoute = {
-  path: string;
+  match: MatchFunction<object>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   simplify: (data: any) => any;
 };
 
+function matchPath(path: string): MatchFunction<object> {
+  return match(path, { decode: decodeURIComponent });
+}
+
 const relayRoutes: RelayRoute[] = [
   {
-    path: "/albums/:id",
+    match: matchPath("/albums/:id"),
     simplify: simplifyAlbumFull,
   },
   {
-    path: "/albums",
+    match: matchPath("/albums"),
     simplify: simplifyMultipleAlbums,
   },
   {
-    path: "/albums/:id/tracks",
+    match: matchPath("/albums/:id/tracks"),
     simplify: simplifyAlbumTracks,
   },
   {
-    path: "/me/albums",
+    match: matchPath("/me/albums"),
     simplify: simplifySavedAlbums,
   },
   {
-    path: "/me/following",
+    match: matchPath("/me/following"),
     simplify: simplifyFollowingArtists,
   },
   {
-    path: "/artists/:id",
+    match: matchPath("/artists/:id"),
     simplify: simplifyArtistFull,
   },
   {
-    path: "/artists",
-    simplify: simplifyMultipleArtists,
-  },
-  {
-    path: "/artists/:id/top-tracks",
+    match: matchPath("/artists/:id/top-tracks"),
     simplify: simplifyArtistTopTracks,
   },
   {
-    path: "/recommendations/available-genre-seeds",
+    match: matchPath("/recommendations/available-genre-seeds"),
     simplify: simplifyAvailableGenreSeeds,
   },
   {
-    path: "/me/player/recently-played",
+    match: matchPath("/me/player/recently-played"),
     simplify: simplifyRecentlyPlayed,
   },
   {
-    path: "/me/playlists",
+    match: matchPath("/me/playlists"),
     simplify: simplifyUserPlaylists,
   },
   {
-    path: "/playlists/:id",
+    match: matchPath("/playlists/:id"),
     simplify: simplifyPlaylistFull,
   },
   {
-    path: "/playlists/:id/tracks",
+    match: matchPath("/playlists/:id/tracks"),
     simplify: simplifyPlaylistTracks,
   },
   {
-    path: "/me/tracks",
+    match: matchPath("/me/tracks"),
     simplify: simplifySavedTracks,
   },
   {
-    path: "/tracks/:id",
+    match: matchPath("/tracks/:id"),
     simplify: simplifyTrackFull,
   },
   {
-    path: "/tracks",
+    match: matchPath("/tracks"),
     simplify: simplifyMultipleTracks,
   },
   {
-    path: "/audio-features",
+    match: matchPath("/audio-features"),
     simplify: simplifyMultipleAudioFeatures,
   },
   {
-    path: "/audio-features/:id",
+    match: matchPath("/audio-features/:id"),
     simplify: simplifyAudioFeatures,
   },
   {
-    path: "/audio-analysis/:id",
+    match: matchPath("/audio-analysis/:id"),
     simplify: simplifyAudioAnalysis,
   },
   {
-    path: "/me",
+    match: matchPath("/me"),
     simplify: simplifyUser,
   },
   {
-    path: "/me/top/tracks",
+    match: matchPath("/me/top/tracks"),
     simplify: simplifyTopTracks,
   },
   {
-    path: "/me/top/artists",
+    match: matchPath("/me/top/artists"),
     simplify: simplifyTopArtists,
   },
 ];
 
-const pathToActionMap = new Map(
-  relayRoutes.map((route) => [route.path, route])
-);
-
 export async function dispatch(request: RequestBody) {
-  const route = pathToActionMap.get(request.path);
+  console.log("Dispatching request:", request);
 
+  // "/artists" の場合は、キャッシュありの特殊処理
+  if (matchPath("/artists")(request.path)) {
+    console.log("Handling artists request with cache");
+    return await getArtistsWithCache(request);
+  }
+
+  const route = relayRoutes.find((r) => r.match(request.path));
   if (!route) {
     throw new NotSupportedError(
       `No supported action found for path: ${request.path}`
     );
-  }
-
-  // "/artists" の場合は、キャッシュありの特殊処理
-  if (route.path === "/artists") {
-    return getArtistsWithCache(request);
   }
 
   const data = await fetchSpotify(request);
@@ -174,6 +172,10 @@ export async function getArtistsWithCache(request: RequestBody) {
   const cachedIds = Object.keys(cached);
   const missingIds = ids.filter((id) => !cachedIds.includes(id));
 
+  console.log(
+    `Cached artists: ${cachedIds.length}, Missing artists: ${missingIds.length}`
+  );
+
   // 足りない分を Spotify API から取得
   let newArtists: ArtistGenreData[] = [];
   if (missingIds.length > 0) {
@@ -191,10 +193,16 @@ export async function getArtistsWithCache(request: RequestBody) {
       retrieved_at: new Date().toISOString(),
     }));
 
+    console.log(`Fetched ${newArtists.length} new artists from Spotify`);
+
     await setArtistGenres(newArtists);
   }
 
   const allResults = [...Object.values(cached), ...newArtists];
+
+  console.log(
+    `Total artists after merging cache and new: ${allResults.length}`
+  );
 
   return { artists: allResults };
 }

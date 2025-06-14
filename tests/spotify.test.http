@@ -3,54 +3,68 @@
 @baseUrl = {{$dotenv BASE_URL}}{{$dotenv SPOTIFY_PREFIX}}
 @apiKey = {{$dotenv API_KEY}}
 
-### /me/tracks - Saved Tracks
-GET {{baseUrl}}?q={"path":"/me/tracks","query":{"limit":5}}
-x-api-key: {{apiKey}}
+###
+POST {{baseUrl}}
+X-API-KEY: {{apiKey}}
+Content-Type: application/json
 
-### /me/albums - Saved Albums
-GET {{baseUrl}}?q={"path":"/me/albums","query":{"limit":5}}
-x-api-key: {{apiKey}}
+{
+  "method": "GET",
+  "path": "/me/tracks",
+  "query": {
+    "__mode": "ping"
+  }
+}
 
-### /me/top/tracks - Top Tracks
-GET {{baseUrl}}?q={"path":"/me/top/tracks","query":{"limit":5}}
-x-api-key: {{apiKey}}
+### 
+POST {{baseUrl}}
+X-API-KEY: {{apiKey}}
+Content-Type: application/json
 
-### /me/top/artists - Top Artists
-GET {{baseUrl}}?q={"path":"/me/top/artists","query":{"limit":5}}
-x-api-key: {{apiKey}}
+{
+  "method": "GET",
+  "path": "/me"  
+}
 
-### /me/playlists - User Playlists
-GET {{baseUrl}}?q={"path":"/me/playlists","query":{"limit":5}}
-x-api-key: {{apiKey}}
+###
 
-### /me/following - Following Artists
-GET {{baseUrl}}?q={"path":"/me/following","query":{"type":"artist"}}
-x-api-key: {{apiKey}}
+POST {{baseUrl}}
+X-API-KEY: {{apiKey}}
+Content-Type: application/json
 
-### /playlists/{id} - Playlist Info
-GET {{baseUrl}}?q={"path":"/playlists/37i9dQZF1DXcBWIGoYBM5M"}
-x-api-key: {{apiKey}}
+{
+  "method": "GET",
+  "path": "/me/tracks",
+  "query": {
+    "offset": "20",
+    "limit": "50"
+  }
+}
 
-### /playlists/{id}/tracks - Playlist Tracks
-GET {{baseUrl}}?q={"path":"/playlists/37i9dQZF1DXcBWIGoYBM5M/tracks"}
-x-api-key: {{apiKey}}
+###
 
-### /albums/{id} - Album Info
-GET {{baseUrl}}?q={"path":"/albums/4aawyAB9vmqN3uQ7FjRGTy"}
-x-api-key: {{apiKey}}
+POST {{baseUrl}}
+X-API-KEY: {{apiKey}}
+Content-Type: application/json
 
-### /albums/{id}/tracks - Album Tracks
-GET {{baseUrl}}?q={"path":"/albums/4aawyAB9vmqN3uQ7FjRGTy/tracks"}
-x-api-key: {{apiKey}}
+{
+  "method": "GET",
+  "path": "/me/following",
+  "query": {
+    "type": "artist"    
+  }
+}
 
-### /tracks/{id} - Track Info
-GET {{baseUrl}}?q={"path":"/tracks/11dFghVXANMlKmJXsNCbNl"}
-x-api-key: {{apiKey}}
+###
 
-### /artists/{id} - Artist Info
-GET {{baseUrl}}?q={"path":"/artists/0OdUWJ0sBjDrqHygGUXeCF"}
-x-api-key: {{apiKey}}
+POST {{baseUrl}}
+X-API-KEY: {{apiKey}}
+Content-Type: application/json
 
-### /artists/{id}/top-tracks - Artist Top Tracks
-GET {{baseUrl}}?q={"path":"/artists/0OdUWJ0sBjDrqHygGUXeCF/top-tracks","query":{"market":"JP"}}
-x-api-key: {{apiKey}}
+{
+  "method": "GET",
+  "path": "/artists",
+  "query": {
+    "ids": "79W7uIUU51RwgRFeYeRrP6,6lB8mMP59che6XMMWCtwMq"
+  }
+}
