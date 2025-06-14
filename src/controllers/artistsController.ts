@@ -65,11 +65,8 @@ export async function refreshArtists(req: Request, res: Response) {
     apiItems,
     cached,
     idSelector: (a) => a.id,
-    equals: (api, cached) =>
-      Boolean(cached) &&
-      api.name === cached.name &&
-      JSON.stringify(api.genres) === JSON.stringify(cached.genres) &&
-      api.popularity === cached.popularity,
+    equalsKeys: ["name", "genres", "popularity"],
+    force,
   });
 
   await Promise.all([

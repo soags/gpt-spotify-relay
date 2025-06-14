@@ -9,7 +9,7 @@ import { classifyItems, toCountResponse } from "../services/classifyItems";
 export const getFollowing = async (req: Request, res: Response) => {
   const limit = Number(req.query.limit ?? 100);
   const cursorId = req.query.cursorId as string | undefined;
-  const cursorAddedAt = req.query.cursorAddedAt as string | undefined;
+  const cursorFollowedAt = req.query.cursorFollowedAt as string | undefined;
 
   let query = db
     .collection("following_artists")
@@ -17,8 +17,8 @@ export const getFollowing = async (req: Request, res: Response) => {
     .orderBy("id")
     .limit(limit);
 
-  if (cursorId && cursorAddedAt) {
-    query = query.startAfter(cursorAddedAt, cursorId);
+  if (cursorId && cursorFollowedAt) {
+    query = query.startAfter(cursorFollowedAt, cursorId);
   }
 
   const snapshot = await query.get();
@@ -27,7 +27,7 @@ export const getFollowing = async (req: Request, res: Response) => {
   // 次ページ用のカーソル
   const last = artists[artists.length - 1];
   const nextCursor = last
-    ? { id: last.id, addedAt: last.followedAt }
+    ? { id: last.id, followedAt: last.followedAt }
     : undefined;
 
   // 総数
@@ -72,13 +72,8 @@ export const refreshFollowing = async (req: Request, res: Response) => {
     apiItems,
     cached,
     idSelector: (a) => a.id,
-    equals: (api, cached) =>
-      !force &&
-      Boolean(cached) &&
-      api.name === cached.name &&
-      JSON.stringify(api.genres) === JSON.stringify(cached.genres) &&
-      api.popularity === cached.popularity &&
-      api.followedAt === cached.followedAt,
+    equalsKeys: ["name", "genres", "popularity", "followedAt"],
+    force,
   });
 
   // Firestore更新

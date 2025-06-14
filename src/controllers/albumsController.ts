@@ -34,7 +34,7 @@ export const refreshAlbums = async (req: Request, res: Response) => {
   };
 
   if (!albumIds || albumIds.length === 0) {
-    return new ValidationError("albumIds is required and cannot be empty.");
+    throw new ValidationError("albumIds is required and cannot be empty.");
   }
 
   const col = db.collection("saved_albums");
@@ -70,13 +70,7 @@ export const refreshAlbums = async (req: Request, res: Response) => {
     apiItems,
     cached,
     idSelector: (a) => a.id,
-    equals: (api, cached) =>
-      Boolean(cached) &&
-      api.name === cached.name &&
-      JSON.stringify(api.artists) === JSON.stringify(cached.artists) &&
-      api.releaseDate === cached.releaseDate &&
-      api.totalTracks === cached.totalTracks &&
-      api.albumType === cached.albumType,
+    equalsKeys: ["name", "artists", "releaseDate", "totalTracks", "albumType"],
   });
 
   await Promise.all([

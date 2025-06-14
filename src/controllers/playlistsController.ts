@@ -69,13 +69,8 @@ export const refreshPlaylists = async (req: Request, res: Response) => {
     apiItems,
     cached,
     idSelector: (p) => p.id,
-    equals: (api, cached) =>
-      !force &&
-      Boolean(cached) &&
-      api.name === cached.name &&
-      api.description === cached.description &&
-      api.total === cached.total &&
-      api.public === cached.public,
+    equalsKeys: ["name", "description", "total", "public"],
+    force,
   });
 
   // Firestore更新

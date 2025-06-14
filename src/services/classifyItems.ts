@@ -18,12 +18,14 @@ export function classifyItems<T>({
   apiItems,
   cached,
   idSelector,
-  equals,
+  equalsKeys,
+  force = false,
 }: {
   apiItems: T[];
   cached: Record<string, T>;
   idSelector: (item: T) => string;
-  equals: (api: T, cached: T) => boolean;
+  equalsKeys: (keyof T)[];
+  force?: boolean;
 }): ClassifyResult<T> {
   const createItems: T[] = [];
   const skipItems: T[] = [];
@@ -33,12 +35,15 @@ export function classifyItems<T>({
   const apiItemsMap = new Map<string, T>();
   apiItems.forEach((item) => apiItemsMap.set(idSelector(item), item));
 
-  // APIトラックを走査して newTracks, skipTracks, refreshTracks を分類
+  // APIトラックを走査して分類
   apiItems.forEach((apiItem) => {
     const cachedItem = cached[idSelector(apiItem)];
 
     // キャッシュとの変化点をチェック
-    const isChanged = equals(apiItem, cachedItem);
+    const isChanged =
+      !force &&
+      Boolean(cached) &&
+      shallowEqualByKeys(apiItem, cachedItem, equalsKeys);
 
     if (!cachedItem) {
       // キャッシュに存在しない場合は新規
@@ -74,4 +79,15 @@ export function toCountResponse<T>(
     skipped: result.skipItems.length,
     deleted: result.deletedIds.length,
   };
+}
+
+function shallowEqualByKeys<T>(a: T, b: T, keys: (keyof T)[]): boolean {
+  if (!a || !b) return false;
+  return keys.every((key) => {
+    const va = a[key];
+    const vb = b[key];
+    return typeof va === "object"
+      ? JSON.stringify(va) === JSON.stringify(vb)
+      : va === vb;
+  });
 }

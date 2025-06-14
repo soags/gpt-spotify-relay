@@ -78,16 +78,16 @@ export async function refreshTracks(req: Request, res: Response) {
     apiItems,
     cached,
     idSelector: (item) => item.id,
-    equals: (api, cached) =>
-      !force &&
-      Boolean(cached) &&
-      cached.name === api.name &&
-      cached.album === api.album &&
-      cached.duration_ms === api.duration_ms &&
-      cached.explicit === api.explicit &&
-      cached.popularity === api.popularity &&
-      cached.addedAt === api.addedAt &&
-      JSON.stringify(cached.artists) === JSON.stringify(api.artists),
+    equalsKeys: [
+      "name",
+      "album",
+      "duration_ms",
+      "explicit",
+      "popularity",
+      "addedAt",
+      "artists",
+    ],
+    force,
   });
 
   // Firestore更新
