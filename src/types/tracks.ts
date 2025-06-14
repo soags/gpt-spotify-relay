@@ -1,9 +1,6 @@
 // src/types/tracks.ts
 
-type ArtistSimplified = {
-  id: string;
-  name: string;
-};
+import { ArtistSimplified } from "./artists";
 
 export type Track = {
   id: string;
@@ -14,45 +11,5 @@ export type Track = {
   explicit: boolean;
   popularity: number;
   addedAt: string;
-
-  audioFeatures?: {
-    danceability: number;
-    energy: number;
-    valence: number;
-    tempo: number;
-    acousticness: number;
-    instrumentalness: number;
-    speechiness: number;
-    liveness: number;
-    loudness: number;
-    mode: number;
-    key: number;
-    timeSignature: number;
-    durationMs: number;
-  };
-
-  audioAnalysis?: {
-    duration: number;
-    tempo: number;
-    key: number;
-    mode: number;
-    timeSignature: number;
-    loudness: number;
-  };
-
   updatedAt: string;
-};
-
-export type ClassifyResult<T> = {
-  createItems: T[];
-  refreshItems: T[];
-  skipItems: T[];
-  deleteIds: string[];
-};
-
-export type ClassifyResultCount = {
-  created: number;
-  refreshed: number;
-  skipped: number;
-  deleted: number;
 };
