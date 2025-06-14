@@ -1,8 +1,8 @@
 // src/routes/index.ts
 
 import { Router } from "express";
-import * as spotifyController from "../controllers/spotifyController";
+import * as tracksController from "../controllers/tracksController";
 
 export const spotifyRouter = Router();
 
-spotifyRouter.post("/", spotifyController.handleRelay);
+spotifyRouter.post("/artists/refresh", tracksController.refresh);
