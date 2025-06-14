@@ -10,7 +10,7 @@
 @cursorId = 0SaGO4XYakz24HIWELYLMt
 @cursorAddedAt = 2025-03-24T18:57:09Z
 
-GET {{baseUrl}}/tracks?limit={{limit}}&cursorId={{cursorId}}&cursorAddedAt={{cursorAddedAt}}
+GET {{baseUrl}}/tracks?limit={{limit}}
 X-API-KEY: {{apiKey}}
 Content-Type: application/json
 
