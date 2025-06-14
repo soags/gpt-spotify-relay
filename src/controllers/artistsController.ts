@@ -1,7 +1,7 @@
 // src/controllers/artistsController.ts
 
 import { Request, Response } from "express";
-import { getAccessToken, GetSeveralArtists } from "../lib/spotify";
+import { getAccessToken, getSeveralArtists } from "../lib/spotify";
 import { db } from "../lib/firestore";
 import { ValidationError } from "../types/error";
 
@@ -50,7 +50,7 @@ export async function refreshArtists(req: Request, res: Response) {
 
   for (let i = 0; i < toFetch.length; i += 50) {
     const ids = toFetch.slice(i, i + 50);
-    const artists = await GetSeveralArtists({ ids }, token);
+    const artists = await getSeveralArtists(ids, token);
 
     for (const a of artists) {
       await col.doc(a.id).set({

@@ -7,45 +7,78 @@ const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET!;
 const SPOTIFY_REFRESH_TOKEN = process.env.SPOTIFY_REFRESH_TOKEN!;
 const SPOTIFY_API_BASE_URL = "https://api.spotify.com/v1";
 
-export async function getUsersSavedTracks(
-  options: { limit: number; offset?: number },
-  token: string
-) {
-  const url = new URL(`${SPOTIFY_API_BASE_URL}/me/tracks`);
+export const getSeveralArtists = async (ids: string[], token: string) => {
+  const url = new URL(`${SPOTIFY_API_BASE_URL}/artists`);
+  url.searchParams.append("ids", ids.join(","));
 
-  if (options) {
-    const searchParams = new URLSearchParams();
-    searchParams.append("limit", String(options.limit));
-    if (typeof options.offset === "number") {
-      searchParams.append("offset", String(options.offset));
-    }
+  const res = await fetchApi<SpotifyApi.MultipleArtistsResponse>(url, token);
+
+  return res.artists;
+};
+
+export const getUsersSavedTracks = async (token: string) => {
+  const tracks = [];
+
+  let offset = 0;
+  let tryCount = 1;
+  for (let i = 0; i < tryCount; i++) {
+    const url = new URL(`${SPOTIFY_API_BASE_URL}/me/tracks`);
+
+    const searchParams = new URLSearchParams({
+      limit: "50",
+    });
+    if (offset > 0) searchParams.append("offset", String(offset));
     url.search = searchParams.toString();
+
+    const res = await fetchApi<SpotifyApi.UsersSavedTracksResponse>(url, token);
+
+    const batch = res.items;
+    tracks.push(...batch);
+
+    if (i === 0) {
+      tryCount = Math.ceil(res.total / 50);
+    }
+
+    offset += 50;
+
+    await new Promise((r) => setTimeout(r, 500));
   }
 
-  const response: SpotifyApi.UsersSavedTracksResponse = await fetchSpotifyApi(
-    url,
-    token
-  );
+  return tracks;
+};
 
-  return response;
-}
+export const getFollowedArtists = async (token: string) => {
+  const artists = [];
+  let after: string | undefined = undefined;
 
-export async function GetSeveralArtists(
-  options: { ids: string[] },
-  token: string
-) {
-  const url = new URL(`${SPOTIFY_API_BASE_URL}/artists`);
-  url.searchParams.append("ids", options.ids.join(","));
+  while (true) {
+    const url = new URL(`${SPOTIFY_API_BASE_URL}/me/following`);
 
-  const response: SpotifyApi.MultipleArtistsResponse = await fetchSpotifyApi(
-    url,
-    token
-  );
+    const searchParams = new URLSearchParams({
+      type: "artist",
+      limit: "50",
+    });
+    if (after) searchParams.append("after", after);
+    url.search = searchParams.toString();
 
-  return response.artists;
-}
+    const res = await fetchApi<SpotifyApi.UsersFollowedArtistsResponse>(
+      url,
+      token
+    );
 
-export async function getAccessToken(): Promise<string> {
+    const batch = res.artists.items;
+    artists.push(...batch);
+
+    after = res.artists.cursors?.after;
+    if (!after) break;
+
+    await new Promise((r) => setTimeout(r, 500));
+  }
+
+  return artists;
+};
+
+export const getAccessToken = async (): Promise<string> => {
   const response = await fetch("https://accounts.spotify.com/api/token", {
     method: "POST",
     headers: {
@@ -63,20 +96,17 @@ export async function getAccessToken(): Promise<string> {
   });
 
   if (!response.ok) {
-    const errorData: { error?: { message: string; status: number } } =
+    const err: { error?: { message: string; status: number } } =
       await response.json();
-    const errorMessage = errorData.error?.message || response.statusText;
-    const errorStatus = errorData.error?.status || response.status;
-    throw new UnauthorizedError(
-      `Spotify API error: ${errorStatus} - ${errorMessage}`
-    );
+    const message = err.error?.message || response.statusText;
+    throw new UnauthorizedError(`Spotify API error: ${message}`);
   }
 
   const data = await response.json();
   return data.access_token;
-}
+};
 
-async function fetchSpotifyApi(url: URL, token: string) {
+const fetchApi = async <T>(url: URL, token: string) => {
   console.log(`Fetching Spotify API: ${url.toString()}`);
   const response = await fetch(url.toString(), {
     headers: {
@@ -86,12 +116,12 @@ async function fetchSpotifyApi(url: URL, token: string) {
   });
 
   if (!response.ok) {
-    const errorData: { error?: { message: string; status: number } } =
+    const err: { error?: { message: string; status: number } } =
       await response.json();
-    const errorMessage = errorData.error?.message || response.statusText;
-    const errorStatus = errorData.error?.status || response.status;
-    throw new Error(`Spotify API error: ${errorStatus} - ${errorMessage}`);
+    const status = err.error?.status || response.status;
+    const message = err.error?.message || response.statusText;
+    throw new Error(`Spotify API error: ${status} - ${message}`);
   }
 
-  return await response.json();
-}
+  return (await response.json()) as T;
+};

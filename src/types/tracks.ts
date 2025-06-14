@@ -11,5 +11,4 @@ export type Track = {
   explicit: boolean;
   popularity: number;
   addedAt: string;
-  updatedAt: string;
 };

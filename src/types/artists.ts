@@ -8,5 +8,5 @@ export type ArtistSimplified = {
 export type Artist = ArtistSimplified & {
   genres: string[];
   popularity: number;
-  updatedAt: string;
+  followedAt: string;
 };

@@ -3,30 +3,36 @@
 import { Request, Response } from "express";
 import { getAccessToken, getUsersSavedTracks } from "../lib/spotify";
 import { Track } from "../types/tracks";
-import {
-  deleteTracks,
-  getTracksAll,
-  getTracksWithCursor,
-  setTracks,
-} from "../cache/tracks";
 import { classifyItems, toCountResponse } from "../services/classifyItems";
+import { db } from "../lib/firestore";
 
 export const getTracks = async (req: Request, res: Response) => {
   const limit = Number(req.query.limit ?? 100);
   const cursorId = req.query.cursorId as string | undefined;
   const cursorAddedAt = req.query.cursorAddedAt as string | undefined;
-  const cursor =
-    cursorId && cursorAddedAt
-      ? { id: cursorId, addedAt: cursorAddedAt }
-      : undefined;
 
-  const {
-    tracks,
-    cursor: nextCursor,
-    total,
-  } = await getTracksWithCursor(limit, cursor);
+  let query = db
+    .collection("saved_tracks")
+    .orderBy("addedAt")
+    .orderBy("id")
+    .limit(limit);
 
-  res.json({
+  if (cursorId && cursorAddedAt) {
+    query = query.startAfter(cursorAddedAt, cursorId);
+  }
+
+  const snapshot = await query.get();
+  const tracks = snapshot.docs.map((doc) => doc.data() as Track);
+
+  // 次ページ用のカーソル
+  const last = tracks[tracks.length - 1];
+  const nextCursor = last ? { id: last.id, addedAt: last.addedAt } : undefined;
+
+  // 総数
+  const totalSnap = await db.collection("saved_tracks").count().get();
+  const total = totalSnap.data().count;
+
+  return res.json({
     tracks,
     cursor: nextCursor,
     total,
@@ -36,20 +42,33 @@ export const getTracks = async (req: Request, res: Response) => {
 export async function refreshTracks(req: Request, res: Response) {
   const token = await getAccessToken();
 
-  // キャッシュから取得
-  const cached = await getTracksAll();
-  const cachedIds = Object.keys(cached);
+  const col = db.collection("saved_tracks");
 
-  console.log(`Cached tracks: ${cachedIds.length}`);
+  const apiTracks = await getUsersSavedTracks(token);
+  const apiItems: Track[] = apiTracks.map((t) => ({
+    id: t.track.id,
+    name: t.track.name,
+    artists: t.track.artists.map((artist) => ({
+      id: artist.id,
+      name: artist.name,
+    })),
+    album: t.track.album.name,
+    duration_ms: t.track.duration_ms,
+    explicit: t.track.explicit,
+    popularity: t.track.popularity,
+    addedAt: t.added_at,
+  }));
 
-  // Spotify API からトラックを全件取得（50件ずつ分割取得）
-  const apiTracks = await getTracksFromSpotify(token);
-  const apiIds = apiTracks.map((track) => track.id);
+  // Firestoreから現在のキャッシュを取得
+  const snapshot = await col.get();
+  const cached: Record<string, Track> = {};
+  snapshot.docs.forEach((doc) => {
+    if (doc.exists) cached[doc.id] = doc.data() as Track;
+  });
 
-  console.log(`Fetched tracks: ${apiIds.length}`);
-
-  const classifyResult = classifyItems<Track>({
-    apiItems: apiTracks,
+  // 差分判定
+  const result = classifyItems<Track>({
+    apiItems,
     cached,
     idSelector: (item) => item.id,
     equals: (api, cached) => {
@@ -65,77 +84,13 @@ export async function refreshTracks(req: Request, res: Response) {
       );
     },
   });
-  const { createItems, refreshItems, deletedIds } = classifyResult;
 
-  // 新規トラックをキャッシュに保存
-  if (createItems.length > 0) {
-    console.log(`Saving ${createItems.length} new tracks to cache`);
-    await setTracks(createItems);
-  }
+  // Firestore更新
+  await Promise.all([
+    ...result.createItems.map((a) => col.doc(a.id).set(a)),
+    ...result.refreshItems.map((a) => col.doc(a.id).set(a)),
+    ...result.deletedIds.map((id) => col.doc(id).delete()),
+  ]);
 
-  // 更新されているトラックをキャッシュに保存
-  if (refreshItems.length > 0) {
-    console.log(`Updating ${refreshItems.length} tracks in cache`);
-    await setTracks(refreshItems);
-  }
-
-  // 削除されているトラックをキャッシュから削除
-  if (deletedIds.length > 0) {
-    console.log(`Deleting ${deletedIds.length} tracks from cache`);
-    await deleteTracks(deletedIds);
-  }
-
-  return res.status(200).json(toCountResponse(classifyResult));
-}
-
-// Spotify API からトラックを全件取得（50件ずつ分割取得）
-async function getTracksFromSpotify(
-  token: string
-): Promise<Omit<Track, "updatedAt">[]> {
-  const tracks: Omit<Track, "updatedAt">[] = [];
-
-  let offset = 0;
-  let tryCount = 1;
-  for (let i = 0; i < tryCount; i++) {
-    console.log(`Fetching tracks: attempt ${i + 1}, offset ${offset}`);
-    const { total, items } = await getUsersSavedTracks(
-      {
-        limit: 50,
-        offset,
-      },
-      token
-    );
-    console.log(`Fetched ${items.length} tracks`);
-
-    const track = items.map((item) => convertToTrack(item));
-    tracks.push(...track);
-
-    if (i === 0) {
-      tryCount = Math.ceil(total / 50);
-    }
-
-    offset += 50;
-
-    await new Promise((r) => setTimeout(r, 1000));
-  }
-
-  return tracks;
-}
-
-function convertToTrack(
-  res: SpotifyApi.SavedTrackObject
-): Omit<Track, "updatedAt"> {
-  return {
-    id: res.track.id,
-    name: res.track.name,
-    artists: res.track.artists.map((artist) => ({
-      id: artist.id,
-      name: artist.name,
-    })),
-    album: res.track.album.name,
-    duration_ms: res.track.duration_ms,
-    explicit: res.track.explicit,
-    popularity: res.track.popularity,
-    addedAt: res.added_at,
-  };
+  return res.json(toCountResponse(result));
 }
