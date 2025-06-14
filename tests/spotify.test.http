@@ -34,11 +34,7 @@ Content-Type: application/json
 
 {
   "method": "GET",
-  "path": "/me/tracks",
-  "query": {
-    "offset": "20",
-    "limit": "50"
-  }
+  "path": "/me/top/tracks"
 }
 
 ###
@@ -65,6 +61,6 @@ Content-Type: application/json
   "method": "GET",
   "path": "/artists",
   "query": {
-    "ids": "79W7uIUU51RwgRFeYeRrP6,6lB8mMP59che6XMMWCtwMq"
+    "ids": "5KSlWH59lUrTux2gOtW1Qm,2RVXnU56kIClg1UbAW9ehz"
   }
 }
