@@ -1,15 +1,16 @@
-// src/utils/spotify.ts
-
-import { RequestConfig } from "../types";
+// src/api/spotify.ts
 
 const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID!;
 const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET!;
 const SPOTIFY_REFRESH_TOKEN = process.env.SPOTIFY_REFRESH_TOKEN!;
 
-export async function relaySpotify({
+export async function fetchSpotify({
   path,
   query,
-}: Pick<RequestConfig, "path" | "query">) {
+}: {
+  path: string;
+  query?: Record<string, string>;
+}) {
   const searchParams = new URLSearchParams();
   if (query) {
     for (const [key, value] of Object.entries(query)) {
@@ -20,10 +21,6 @@ export async function relaySpotify({
   }
 
   const token = await getAccessToken();
-
-  if (!token) {
-    throw new Error("Failed to retrieve Spotify access token");
-  }
 
   const url = new URL(`https://api.spotify.com/v1${path}`);
   url.search = searchParams.toString();
