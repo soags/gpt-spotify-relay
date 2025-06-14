@@ -1,14 +1,10 @@
-// src/middleware/authMiddleware.ts
+// src/middleware/auth.ts
 
 import { Request, Response, NextFunction } from "express";
 
 const API_KEY = process.env.API_KEY;
 
-export function authMiddleware(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export function auth(req: Request, res: Response, next: NextFunction) {
   const key = req.header("X-API-KEY");
 
   if (!key || key !== API_KEY) {
