@@ -2,20 +2,40 @@
 
 import { Request, Response } from "express";
 import { getAccessToken, getUsersSavedTracks } from "../api/spotify";
-import { Track } from "../types/tracks";
-import { deleteTracks, getTracksAll, setTracks } from "../cache/tracks";
+import { ClassifyResult, ClassifyResultCount, Track } from "../types/tracks";
+import {
+  deleteTracks,
+  getTracksAll,
+  getTracksWithCursor,
+  setTracks,
+} from "../cache/tracks";
 
-type RefreshResponse = {
-  new: number;
-  refreshed: number;
-  skipped: number;
-  deleted: number;
+export const getTracks = async (req: Request, res: Response) => {
+  const limit = Number(req.query.limit ?? 100);
+  const cursorId = req.query.cursorId as string | undefined;
+  const cursorAddedAt = req.query.cursorAddedAt as string | undefined;
+  const cursor =
+    cursorId && cursorAddedAt
+      ? { id: cursorId, addedAt: cursorAddedAt }
+      : undefined;
+
+  const {
+    tracks,
+    cursor: nextCursor,
+    total,
+  } = await getTracksWithCursor(limit, cursor);
+
+  res.json({
+    tracks,
+    cursor: nextCursor,
+    total,
+  });
 };
 
 export async function refresh(
   req: Request,
   res: Response
-): Promise<Response<RefreshResponse>> {
+): Promise<Response<ClassifyResultCount>> {
   const token = await getAccessToken();
 
   // キャッシュから取得
@@ -30,40 +50,41 @@ export async function refresh(
 
   console.log(`Fetched tracks: ${apiIds.length}`);
 
-  const classified = classifyTracks(apiTracks, cached);
+  const { createItems, refreshItems, skipItems, deleteIds } = classifyTracks(
+    apiTracks,
+    cached
+  );
 
   // 新規トラックをキャッシュに保存
-  if (classified.newTracks.length > 0) {
-    console.log(`Saving ${classified.newTracks.length} new tracks to cache`);
-    await setTracks(classified.newTracks);
+  if (createItems.length > 0) {
+    console.log(`Saving ${createItems.length} new tracks to cache`);
+    await setTracks(createItems);
   }
 
   // 更新されているトラックをキャッシュに保存
-  if (classified.refreshTracks.length > 0) {
-    console.log(`Updating ${classified.refreshTracks.length} tracks in cache`);
-    await setTracks(classified.refreshTracks);
+  if (refreshItems.length > 0) {
+    console.log(`Updating ${refreshItems.length} tracks in cache`);
+    await setTracks(refreshItems);
   }
 
   // 削除されているトラックをキャッシュから削除
-  if (classified.deletedTrackIds.length > 0) {
-    console.log(
-      `Deleting ${classified.deletedTrackIds.length} tracks from cache`
-    );
-    await deleteTracks(classified.deletedTrackIds);
+  if (deleteIds.length > 0) {
+    console.log(`Deleting ${deleteIds.length} tracks from cache`);
+    await deleteTracks(deleteIds);
   }
 
   return res.status(200).json({
-    new: classified.newTracks.length,
-    refreshed: classified.refreshTracks.length,
-    skipped: classified.skipTracks.length,
-    deleted: classified.deletedTrackIds.length,
+    new: createItems.length,
+    refreshed: refreshItems.length,
+    skipped: skipItems.length,
+    deleted: deleteIds.length,
   });
 }
 
 function classifyTracks(
   apiTracks: Omit<Track, "updatedAt">[],
   cached: Record<string, Track>
-) {
+): ClassifyResult<Track> {
   const newTracks: Track[] = [];
   const skipTracks: Track[] = [];
   const refreshTracks: Track[] = [];
@@ -113,24 +134,28 @@ function classifyTracks(
   );
 
   return {
-    newTracks,
-    skipTracks,
-    refreshTracks,
-    deletedTrackIds,
+    createItems: newTracks,
+    skipItems: skipTracks,
+    refreshItems: refreshTracks,
+    deleteIds: deletedTrackIds,
   };
 }
 
 // Spotify API からトラックを全件取得（50件ずつ分割取得）
-async function getTracksFromSpotify(token: string) {
+async function getTracksFromSpotify(
+  token: string
+): Promise<Omit<Track, "updatedAt">[]> {
   const tracks: Omit<Track, "updatedAt">[] = [];
 
   let offset = 0;
   let tryCount = 1;
   for (let i = 0; i < tryCount; i++) {
+    console.log(`Fetching tracks: attempt ${i + 1}, offset ${offset}`);
     const res = await getUsersSavedTracks(token, {
       limit: 50,
       offset,
     });
+    console.log(`Fetched ${res.items.length} tracks`);
 
     const track = res.items.map((item) => convertToTrack(item));
     tracks.push(...track);

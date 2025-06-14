@@ -5,4 +5,5 @@ import * as tracksController from "../controllers/tracksController";
 
 export const spotifyRouter = Router();
 
-spotifyRouter.post("/artists/refresh", tracksController.refresh);
+spotifyRouter.get("/tracks", tracksController.getTracks);
+spotifyRouter.post("/tracks/refresh", tracksController.refresh);

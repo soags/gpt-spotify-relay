@@ -42,3 +42,17 @@ export type Track = {
 
   updatedAt: string;
 };
+
+export type ClassifyResult<T> = {
+  createItems: T[];
+  refreshItems: T[];
+  skipItems: T[];
+  deleteIds: string[];
+};
+
+export type ClassifyResultCount = {
+  created: number;
+  refreshed: number;
+  skipped: number;
+  deleted: number;
+};

@@ -5,10 +5,37 @@ import { db } from "./firestore";
 
 const COLLECTION = "saved_tracks";
 
-// 単一取得
-export async function getTrack(id: string): Promise<Track | null> {
-  const doc = await db.collection(COLLECTION).doc(id).get();
-  return doc.exists ? (doc.data() as Track) : null;
+// カーソル取得
+export async function getTracksWithCursor(
+  limit: number,
+  cursor?: Pick<Track, "id" | "addedAt">
+): Promise<{
+  tracks: Track[];
+  cursor?: Pick<Track, "id" | "addedAt">;
+  total: number;
+}> {
+  let query = db
+    .collection(COLLECTION)
+    .orderBy("addedAt")
+    .orderBy("id")
+    .limit(limit);
+
+  if (cursor?.id && cursor.addedAt) {
+    query = query.startAfter(cursor.addedAt, cursor.id);
+  }
+
+  const snapshot = await query.get();
+  const tracks = snapshot.docs.map((doc) => doc.data() as Track);
+
+  // 次ページ用のカーソル
+  const last = tracks[tracks.length - 1];
+  const nextCursor = last ? { id: last.id, addedAt: last.addedAt } : undefined;
+
+  // 総数
+  const totalSnap = await db.collection(COLLECTION).count().get();
+  const total = totalSnap.data().count;
+
+  return { tracks, cursor: nextCursor, total };
 }
 
 // 全件取得

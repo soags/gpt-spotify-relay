@@ -3,64 +3,19 @@
 @baseUrl = {{$dotenv BASE_URL}}{{$dotenv SPOTIFY_PREFIX}}
 @apiKey = {{$dotenv API_KEY}}
 
-###
-POST {{baseUrl}}
+
+### Tracks Get
+
+@limit = 5
+@cursorId = 0SaGO4XYakz24HIWELYLMt
+@cursorAddedAt = 2025-03-24T18:57:09Z
+
+GET {{baseUrl}}/tracks?limit={{limit}}&cursorId={{cursorId}}&cursorAddedAt={{cursorAddedAt}}
 X-API-KEY: {{apiKey}}
 Content-Type: application/json
 
-{
-  "method": "GET",
-  "path": "/me/tracks",
-  "query": {
-    "__mode": "ping"
-  }
-}
+### Tracks Refresh
 
-### 
-POST {{baseUrl}}
+POST {{baseUrl}}/tracks/refresh
 X-API-KEY: {{apiKey}}
 Content-Type: application/json
-
-{
-  "method": "GET",
-  "path": "/me"  
-}
-
-###
-
-POST {{baseUrl}}
-X-API-KEY: {{apiKey}}
-Content-Type: application/json
-
-{
-  "method": "GET",
-  "path": "/me/top/tracks"
-}
-
-###
-
-POST {{baseUrl}}
-X-API-KEY: {{apiKey}}
-Content-Type: application/json
-
-{
-  "method": "GET",
-  "path": "/me/following",
-  "query": {
-    "type": "artist"    
-  }
-}
-
-###
-
-POST {{baseUrl}}
-X-API-KEY: {{apiKey}}
-Content-Type: application/json
-
-{
-  "method": "GET",
-  "path": "/artists",
-  "query": {
-    "ids": "5KSlWH59lUrTux2gOtW1Qm,2RVXnU56kIClg1UbAW9ehz"
-  }
-}
