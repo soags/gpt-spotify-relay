@@ -6,11 +6,7 @@
 
 ### Tracks Get
 
-@limit = 5
-@cursorId = 0SaGO4XYakz24HIWELYLMt
-@cursorAddedAt = 2025-03-24T18:57:09Z
-
-GET {{baseUrl}}/tracks?limit={{limit}}
+GET {{baseUrl}}/tracks
 X-API-KEY: {{apiKey}}
 Content-Type: application/json
 
@@ -19,3 +15,75 @@ Content-Type: application/json
 POST {{baseUrl}}/tracks/refresh
 X-API-KEY: {{apiKey}}
 Content-Type: application/json
+
+{
+  "force": true
+}
+
+### =========================================================
+
+### Following Get
+
+GET {{baseUrl}}/following
+X-API-KEY: {{apiKey}}
+Content-Type: application/json
+
+### Following Refresh
+
+POST {{baseUrl}}/following/refresh
+X-API-KEY: {{apiKey}}
+Content-Type: application/json
+
+### =========================================================
+
+### Playlist Get
+
+GET {{baseUrl}}/playlists
+X-API-KEY: {{apiKey}}
+Content-Type: application/json
+
+### Playlist Refresh
+
+POST {{baseUrl}}/playlists/refresh
+X-API-KEY: {{apiKey}}
+Content-Type: application/json
+
+### =========================================================
+
+### Artists Get
+GET {{baseUrl}}/artists?ids=1uNFoZAHBGtllmzznpCI3s,3eOyGULyH8dDoCBQMuLYZC
+X-API-KEY: {{apiKey}}
+Content-Type: application/json
+
+### Artists Refresh
+POST {{baseUrl}}/artists/refresh
+X-API-KEY: {{apiKey}}
+Content-Type: application/json
+
+{
+  "artistIds": [
+    "1uNFoZAHBGtllmzznpCI3s",
+    "3eOyGULyH8dDoCBQMuLYZC"
+  ],
+  "force": true
+}
+
+### =========================================================
+
+### Album Get
+GET {{baseUrl}}/albums?ids=5cxMa6oLINJzmZ8lF7wWQN,05H1dRhfSFcuWW1HD5Nama
+X-API-KEY: {{apiKey}}
+Content-Type: application/json
+
+### Albums Refresh
+POST {{baseUrl}}/albums/refresh
+X-API-KEY: {{apiKey}}
+Content-Type: application/json
+
+{
+  "albumIds": [
+    "5cxMa6oLINJzmZ8lF7wWQN",
+    "05H1dRhfSFcuWW1HD5Nama"
+  ],
+  "force": true
+}

@@ -3,7 +3,7 @@
 import { Request, Response } from "express";
 import { getAccessToken, getFollowedArtists } from "../lib/spotify";
 import { db } from "../lib/firestore";
-import { Artist } from "../types/artists";
+import { FollowingArtist } from "../types/artists";
 import { classifyItems, toCountResponse } from "../services/classifyItems";
 
 export const getFollowing = async (req: Request, res: Response) => {
@@ -22,7 +22,7 @@ export const getFollowing = async (req: Request, res: Response) => {
   }
 
   const snapshot = await query.get();
-  const artists = snapshot.docs.map((doc) => doc.data() as Artist);
+  const artists = snapshot.docs.map((doc) => doc.data() as FollowingArtist);
 
   // 次ページ用のカーソル
   const last = artists[artists.length - 1];
@@ -44,11 +44,15 @@ export const getFollowing = async (req: Request, res: Response) => {
 export const refreshFollowing = async (req: Request, res: Response) => {
   const token = await getAccessToken();
 
+  const { force = false } = req.body as {
+    force?: boolean;
+  };
+
   const col = db.collection("following_artists");
   const followedAt = new Date().toISOString();
 
   const apiArtists = await getFollowedArtists(token);
-  const apiItems: Artist[] = apiArtists.map((a) => ({
+  const apiItems: FollowingArtist[] = apiArtists.map((a) => ({
     id: a.id,
     name: a.name,
     genres: a.genres,
@@ -58,9 +62,9 @@ export const refreshFollowing = async (req: Request, res: Response) => {
 
   // Firestoreから現在のキャッシュを取得
   const snapshot = await col.get();
-  const cached: Record<string, Artist> = {};
+  const cached: Record<string, FollowingArtist> = {};
   snapshot.docs.forEach((doc) => {
-    if (doc.exists) cached[doc.id] = doc.data() as Artist;
+    if (doc.exists) cached[doc.id] = doc.data() as FollowingArtist;
   });
 
   // 差分判定
@@ -69,10 +73,12 @@ export const refreshFollowing = async (req: Request, res: Response) => {
     cached,
     idSelector: (a) => a.id,
     equals: (api, cached) =>
+      !force &&
       Boolean(cached) &&
-      api.popularity === cached.popularity &&
       api.name === cached.name &&
-      JSON.stringify(api.genres) === JSON.stringify(cached.genres),
+      JSON.stringify(api.genres) === JSON.stringify(cached.genres) &&
+      api.popularity === cached.popularity &&
+      api.followedAt === cached.followedAt,
   });
 
   // Firestore更新
@@ -82,5 +88,5 @@ export const refreshFollowing = async (req: Request, res: Response) => {
     ...result.deletedIds.map((id) => col.doc(id).delete()),
   ]);
 
-  res.json(toCountResponse(result));
+  return res.json(toCountResponse(result));
 };

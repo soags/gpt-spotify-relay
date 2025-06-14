@@ -42,6 +42,10 @@ export const getTracks = async (req: Request, res: Response) => {
 export async function refreshTracks(req: Request, res: Response) {
   const token = await getAccessToken();
 
+  const { force = false } = req.body as {
+    force?: boolean;
+  };
+
   const col = db.collection("saved_tracks");
 
   const apiTracks = await getUsersSavedTracks(token);
@@ -52,7 +56,10 @@ export async function refreshTracks(req: Request, res: Response) {
       id: artist.id,
       name: artist.name,
     })),
-    album: t.track.album.name,
+    album: {
+      id: t.track.album.id,
+      name: t.track.album.name,
+    },
     duration_ms: t.track.duration_ms,
     explicit: t.track.explicit,
     popularity: t.track.popularity,
@@ -72,6 +79,7 @@ export async function refreshTracks(req: Request, res: Response) {
     cached,
     idSelector: (item) => item.id,
     equals: (api, cached) =>
+      !force &&
       Boolean(cached) &&
       cached.name === api.name &&
       cached.album === api.album &&

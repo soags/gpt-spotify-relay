@@ -8,5 +8,8 @@ export type ArtistSimplified = {
 export type Artist = ArtistSimplified & {
   genres: string[];
   popularity: number;
+};
+
+export type FollowingArtist = Artist & {
   followedAt: string;
 };

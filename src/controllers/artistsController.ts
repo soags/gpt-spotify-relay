@@ -4,6 +4,8 @@ import { Request, Response } from "express";
 import { getAccessToken, getSeveralArtists } from "../lib/spotify";
 import { db } from "../lib/firestore";
 import { ValidationError } from "../types/error";
+import { Artist } from "../types/artists";
+import { classifyItems, toCountResponse } from "../services/classifyItems";
 
 export const getArtists = async (req: Request, res: Response) => {
   const ids = (req.query.ids as string)?.split(",") ?? [];
@@ -20,7 +22,7 @@ export const getArtists = async (req: Request, res: Response) => {
 
   const artists = docs.filter((doc) => doc.exists).map((doc) => doc.data());
 
-  res.json(artists);
+  return res.json(artists);
 };
 
 export async function refreshArtists(req: Request, res: Response) {
@@ -37,32 +39,44 @@ export async function refreshArtists(req: Request, res: Response) {
 
   const col = db.collection("saved_artists");
 
-  const toFetch: string[] = [];
+  const snapshot = await col.get();
+  const cached: Record<string, Artist> = {};
+  snapshot.docs.forEach((doc) => {
+    if (doc.exists) cached[doc.id] = doc.data() as Artist;
+  });
 
-  for (const id of artistIds) {
-    const doc = await col.doc(id).get();
-    if (!doc.exists || force) {
-      toFetch.push(id);
-    }
-  }
+  const toFetch = force ? artistIds : artistIds.filter((id) => !cached[id]);
 
-  const results = [];
-
+  const artists = [];
   for (let i = 0; i < toFetch.length; i += 50) {
     const ids = toFetch.slice(i, i + 50);
-    const artists = await getSeveralArtists(ids, token);
-
-    for (const a of artists) {
-      await col.doc(a.id).set({
-        id: a.id,
-        name: a.name,
-        genres: a.genres,
-        popularity: a.popularity,
-        updatedAt: new Date().toISOString(),
-      });
-      results.push({ id: a.id, status: "refreshed" });
-    }
+    const result = await getSeveralArtists(ids, token);
+    artists.push(...result);
   }
 
-  return res.json(results);
+  const apiItems: Artist[] = artists.map((a) => ({
+    id: a.id,
+    name: a.name,
+    genres: a.genres,
+    popularity: a.popularity,
+  }));
+
+  const result = classifyItems({
+    apiItems,
+    cached,
+    idSelector: (a) => a.id,
+    equals: (api, cached) =>
+      Boolean(cached) &&
+      api.name === cached.name &&
+      JSON.stringify(api.genres) === JSON.stringify(cached.genres) &&
+      api.popularity === cached.popularity,
+  });
+
+  await Promise.all([
+    ...result.createItems.map((a) => col.doc(a.id).set(a)),
+    ...result.refreshItems.map((a) => col.doc(a.id).set(a)),
+    ...result.deletedIds.map((id) => col.doc(id).delete()),
+  ]);
+
+  return res.json(toCountResponse(result));
 }

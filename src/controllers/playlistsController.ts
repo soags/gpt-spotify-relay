@@ -37,6 +37,10 @@ export const getPlaylists = async (req: Request, res: Response) => {
 export const refreshPlaylists = async (req: Request, res: Response) => {
   const token = await getAccessToken();
 
+  const { force = false } = req.body as {
+    force?: boolean;
+  };
+
   const col = db.collection("user_playlists");
 
   const apiPlaylists = await getUserPlaylists(token);
@@ -66,6 +70,7 @@ export const refreshPlaylists = async (req: Request, res: Response) => {
     cached,
     idSelector: (p) => p.id,
     equals: (api, cached) =>
+      !force &&
       Boolean(cached) &&
       api.name === cached.name &&
       api.description === cached.description &&
@@ -80,5 +85,5 @@ export const refreshPlaylists = async (req: Request, res: Response) => {
     ...result.deletedIds.map((id) => col.doc(id).delete()),
   ]);
 
-  res.json(toCountResponse(result));
+  return res.json(toCountResponse(result));
 };

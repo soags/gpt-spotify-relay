@@ -7,6 +7,15 @@ const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET!;
 const SPOTIFY_REFRESH_TOKEN = process.env.SPOTIFY_REFRESH_TOKEN!;
 const SPOTIFY_API_BASE_URL = "https://api.spotify.com/v1";
 
+export const getSeveralAlbums = async (ids: string[], token: string) => {
+  const url = new URL(`${SPOTIFY_API_BASE_URL}/albums`);
+  url.searchParams.append("ids", ids.join(","));
+
+  const res = await fetchApi<SpotifyApi.MultipleAlbumsResponse>(url, token);
+
+  return res.albums;
+};
+
 export const getUserPlaylists = async (token: string) => {
   return await fetchAllPaginated<
     SpotifyApi.PlaylistObjectSimplified,
