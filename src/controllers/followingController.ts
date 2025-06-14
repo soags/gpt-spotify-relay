@@ -69,9 +69,10 @@ export const refreshFollowing = async (req: Request, res: Response) => {
     cached,
     idSelector: (a) => a.id,
     equals: (api, cached) =>
-      JSON.stringify(api.genres) === JSON.stringify(cached.genres) &&
+      Boolean(cached) &&
       api.popularity === cached.popularity &&
-      api.name === cached.name,
+      api.name === cached.name &&
+      JSON.stringify(api.genres) === JSON.stringify(cached.genres),
   });
 
   // Firestore更新
