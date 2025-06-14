@@ -1,22 +1,6 @@
-// src/spotify/simplify/playlists.ts
+// src/simplify/playlists.ts
 
-import { Matcher } from ".";
 import { simplifyTrackFull } from "./tracks";
-
-export const playlistMatchers: Matcher[] = [
-  {
-    test: (path) => /^\/me\/playlists$/.test(path),
-    simplify: simplifyUserPlaylists,
-  },
-  {
-    test: (path) => /^\/playlists\/[^/]+$/.test(path),
-    simplify: simplifyPlaylistFull,
-  },
-  {
-    test: (path) => /^\/playlists\/[^/]+\/tracks$/.test(path),
-    simplify: simplifyPlaylistTracks,
-  },
-];
 
 export function simplifyPlaylistSimplified(
   res: SpotifyApi.PlaylistObjectSimplified

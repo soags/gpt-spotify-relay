@@ -1,34 +1,6 @@
-// src/spotify/simplify/tracks.ts
+// src/simplify/tracks.ts
 
-import { Matcher } from ".";
 import { simplifyArtistSimplified } from "./artists";
-
-export const tracksMatchers: Matcher[] = [
-  {
-    test: (path) => /^\/me\/tracks$/.test(path),
-    simplify: simplifySavedTracks,
-  },
-  {
-    test: (path) => /^\/tracks\/[^/]+$/.test(path),
-    simplify: simplifyTrackFull,
-  },
-  {
-    test: (path) => /^\/tracks$/.test(path),
-    simplify: simplifyMultipleTracks,
-  },
-  {
-    test: (path) => /^\/audio-features$/.test(path),
-    simplify: simplifyMultipleAudioFeatures,
-  },
-  {
-    test: (path) => /^\/audio-features\/[^/]+$/.test(path),
-    simplify: simplifyAudioFeatures,
-  },
-  {
-    test: (path) => /^\/audio-analysis\/[^/]+$/.test(path),
-    simplify: simplifyAudioAnalysis,
-  },
-];
 
 export function simplifyTracktSimplified(
   res: SpotifyApi.TrackObjectSimplified

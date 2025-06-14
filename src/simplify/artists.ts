@@ -1,27 +1,6 @@
-// src/spotify/simplify/artists.ts
+// src/simplify/artists.ts
 
-import { Matcher } from ".";
 import { simplifyTrackFull } from "./tracks";
-
-export const artistsMatchers: Matcher[] = [
-  {
-    test: (path, q) =>
-      /^\/me\/following\?type=artist$/.test(path) && q?.type === "artist",
-    simplify: simplifyFollowingArtists,
-  },
-  {
-    test: (path) => /^\/artists\/[^/]+$/.test(path),
-    simplify: simplifyArtistFull,
-  },
-  {
-    test: (path) => /^\/artists$/.test(path),
-    simplify: simplifyMultipleArtists,
-  },
-  {
-    test: (path) => /^\/artists\/[^/]+\/top-tracks$/.test(path),
-    simplify: simplifyArtistTopTracks,
-  },
-];
 
 export function simplifyArtistSimplified(
   res: SpotifyApi.ArtistObjectSimplified

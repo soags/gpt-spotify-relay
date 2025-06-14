@@ -1,23 +1,7 @@
-// src/spotify/simplify/users.ts
+// src/simplify/users.ts
 
-import { Matcher } from ".";
 import { simplifyArtistFull } from "./artists";
 import { simplifyTrackFull } from "./tracks";
-
-export const usersMatchers: Matcher[] = [
-  {
-    test: (path) => /^\/me$/.test(path),
-    simplify: simplifyUser,
-  },
-  {
-    test: (path) => /^\/me\/top\/tracks$/.test(path),
-    simplify: simplifyTopTracks,
-  },
-  {
-    test: (path) => /^\/me\/top\/artists$/.test(path),
-    simplify: simplifyTopArtists,
-  },
-];
 
 // GET /me
 export function simplifyUser(res: SpotifyApi.UserObjectPublic) {

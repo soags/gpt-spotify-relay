@@ -1,14 +1,6 @@
-// src/spotify/simplify/players.ts
+// src/simplify/players.ts
 
-import { Matcher } from ".";
 import { simplifyTrackFull } from "./tracks";
-
-export const playersMatchers: Matcher[] = [
-  {
-    test: (path) => /^\/me\/player\/recently-played$/.test(path),
-    simplify: simplifyRecentlyPlayed,
-  },
-];
 
 export function simplifyRecentlyPlayed(
   res: SpotifyApi.UsersRecentlyPlayedTracksResponse
