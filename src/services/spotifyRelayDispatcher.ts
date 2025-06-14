@@ -179,19 +179,21 @@ export async function getArtistsWithCache(request: RequestBody) {
   // 足りない分を Spotify API から取得
   let newArtists: ArtistGenreData[] = [];
   if (missingIds.length > 0) {
-    const { artists } = await fetchSpotify({
+    const response = await fetchSpotify({
       path: "/artists",
       query: {
         ids: missingIds.join(","),
       },
     });
 
-    newArtists = artists.map((a: SpotifyApi.ArtistObjectFull) => ({
-      id: a.id,
-      name: a.name,
-      genres: a.genres ?? [],
-      retrieved_at: new Date().toISOString(),
-    }));
+    newArtists = (response.artists ?? [])
+      .filter(Boolean)
+      .map((a: SpotifyApi.ArtistObjectFull) => ({
+        id: a.id,
+        name: a.name,
+        genres: a.genres ?? [],
+        retrieved_at: new Date().toISOString(),
+      }));
 
     console.log(`Fetched ${newArtists.length} new artists from Spotify`);
 
