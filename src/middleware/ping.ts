@@ -3,8 +3,6 @@
 import { Request, Response, NextFunction } from "express";
 
 export function ping(req: Request, res: Response, next: NextFunction) {
-  console.log("Ping middleware triggered");
-
   // __mode が "ping" の場合はテストレスポンスを返す
   const mode = req.body?.query?.__mode;
   if (mode === "ping") {

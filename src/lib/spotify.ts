@@ -7,6 +7,24 @@ const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET!;
 const SPOTIFY_REFRESH_TOKEN = process.env.SPOTIFY_REFRESH_TOKEN!;
 const SPOTIFY_API_BASE_URL = "https://api.spotify.com/v1";
 
+export const getUserPlaylists = async (token: string) => {
+  return await fetchAllPaginated<
+    SpotifyApi.PlaylistObjectSimplified,
+    SpotifyApi.ListOfCurrentUsersPlaylistsResponse
+  >({
+    getUrl: (_page, offset) => {
+      const url = new URL(`${SPOTIFY_API_BASE_URL}/me/playlists`);
+      const searchParams = new URLSearchParams({ limit: "50" });
+      if (offset > 0) searchParams.append("offset", String(offset));
+      url.search = searchParams.toString();
+      return url;
+    },
+    extractItems: (res) => res.items,
+    extractNext: (res, _page, offset) => offset < res.total,
+    token,
+  });
+};
+
 export const getSeveralArtists = async (ids: string[], token: string) => {
   const url = new URL(`${SPOTIFY_API_BASE_URL}/artists`);
   url.searchParams.append("ids", ids.join(","));
@@ -17,34 +35,21 @@ export const getSeveralArtists = async (ids: string[], token: string) => {
 };
 
 export const getUsersSavedTracks = async (token: string) => {
-  const tracks = [];
-
-  let offset = 0;
-  let tryCount = 1;
-  for (let i = 0; i < tryCount; i++) {
-    const url = new URL(`${SPOTIFY_API_BASE_URL}/me/tracks`);
-
-    const searchParams = new URLSearchParams({
-      limit: "50",
-    });
-    if (offset > 0) searchParams.append("offset", String(offset));
-    url.search = searchParams.toString();
-
-    const res = await fetchApi<SpotifyApi.UsersSavedTracksResponse>(url, token);
-
-    const batch = res.items;
-    tracks.push(...batch);
-
-    if (i === 0) {
-      tryCount = Math.ceil(res.total / 50);
-    }
-
-    offset += 50;
-
-    await new Promise((r) => setTimeout(r, 500));
-  }
-
-  return tracks;
+  return await fetchAllPaginated<
+    SpotifyApi.SavedTrackObject,
+    SpotifyApi.UsersSavedTracksResponse
+  >({
+    getUrl: (_page, offset) => {
+      const url = new URL(`${SPOTIFY_API_BASE_URL}/me/tracks`);
+      const searchParams = new URLSearchParams({ limit: "50" });
+      if (offset > 0) searchParams.append("offset", String(offset));
+      url.search = searchParams.toString();
+      return url;
+    },
+    extractItems: (res) => res.items,
+    extractNext: (res, _page, offset) => offset < res.total,
+    token,
+  });
 };
 
 export const getFollowedArtists = async (token: string) => {
@@ -105,6 +110,47 @@ export const getAccessToken = async (): Promise<string> => {
   const data = await response.json();
   return data.access_token;
 };
+
+// ページネーションAPIの分割取得を共通化
+export async function fetchAllPaginated<T, R>({
+  getUrl,
+  extractItems,
+  extractNext,
+  limit = 50,
+  delayMs = 500,
+  token,
+}: {
+  getUrl: (page: number, offset: number) => URL;
+  extractItems: (res: R) => T[];
+  extractNext?: (res: R, page: number, offset: number) => boolean;
+  limit?: number;
+  delayMs?: number;
+  token: string;
+}): Promise<T[]> {
+  const all: T[] = [];
+  let offset = 0;
+  let page = 0;
+  let hasNext = true;
+  while (hasNext) {
+    const url = getUrl(page, offset);
+    const res = await fetchApi<R>(url, token);
+    const items = extractItems(res);
+    all.push(...items);
+    page++;
+    offset += limit;
+    if (extractNext) {
+      hasNext = extractNext(res, page, offset);
+    } else if (typeof (res as { next?: string }).next !== "undefined") {
+      hasNext = Boolean((res as { next?: string }).next);
+    } else if (typeof (res as { total?: number }).total !== "undefined") {
+      hasNext = all.length < (res as { total: number }).total;
+    } else {
+      hasNext = items.length === limit;
+    }
+    if (hasNext && delayMs) await new Promise((r) => setTimeout(r, delayMs));
+  }
+  return all;
+}
 
 const fetchApi = async <T>(url: URL, token: string) => {
   console.log(`Fetching Spotify API: ${url.toString()}`);
