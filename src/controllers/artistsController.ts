@@ -8,7 +8,8 @@ import { Artist } from "../types/artists";
 import { classifyItems, toCountResponse } from "../services/classifyItems";
 
 export const getArtists = async (req: Request, res: Response) => {
-  const ids = (req.query.ids as string)?.split(",") ?? [];
+  const rawIds = req.query.ids as string | undefined;
+  const ids = rawIds?.trim() ? rawIds.split(",").filter(Boolean) : [];
   const limit = Number(req.query.limit ?? 100);
   const cursorId = req.query.cursorId as string | undefined;
 
