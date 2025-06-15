@@ -1,7 +1,11 @@
 // src/middleware/errorHandler.ts
 
 import { Request, Response, NextFunction } from "express";
-import { NotSupportedError, ValidationError } from "../types/error";
+import {
+  NotFoundError,
+  NotSupportedError,
+  ValidationError,
+} from "../types/error";
 
 type ErrorResponse = {
   message: string;
@@ -29,6 +33,10 @@ export function errorHandler(
     errorResponse.name = err.name;
   } else if (err instanceof NotSupportedError) {
     statusCode = 405; // Method Not Allowed (またはNot Implementedなど、適切なステータスコードを選択)
+    errorResponse.message = err.message;
+    errorResponse.name = err.name;
+  } else if (err instanceof NotFoundError) {
+    statusCode = 404; // Not Found
     errorResponse.message = err.message;
     errorResponse.name = err.name;
   } else {

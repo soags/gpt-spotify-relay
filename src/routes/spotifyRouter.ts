@@ -1,4 +1,4 @@
-// src/routes/index.ts
+// src/routes/spotifyRouter.ts
 
 import { Router } from "express";
 import * as tracksController from "../controllers/spotify/tracksController";

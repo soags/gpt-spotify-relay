@@ -1,7 +1,7 @@
 // src/controllers/albumsController.ts
 
 import { Request, Response } from "express";
-import { COLLECTIONS, db } from "../../lib/firestore";
+import { SPOTIFY_COLLECTIONS, db } from "../../lib/firestore";
 import { classifyItems, toCountResponse } from "../../services/classifyItems";
 import {
   getAccessToken,
@@ -18,7 +18,7 @@ export const getAlbums = async (req: Request, res: Response) => {
   const limit = Number(req.query.limit ?? 100);
   const cursorId = req.query.cursorId as string | undefined;
 
-  const col = db.collection(COLLECTIONS.ALBUMS);
+  const col = db.collection(SPOTIFY_COLLECTIONS.ALBUMS);
 
   if (ids.length > 0) {
     // ids指定時はidsのアルバムを全件取得、ページネーション・limit無視
@@ -59,7 +59,7 @@ export const refreshAlbums = async (req: Request, res: Response) => {
     throw new ValidationError("albumIds is required and cannot be empty.");
   }
 
-  const col = db.collection(COLLECTIONS.ALBUMS);
+  const col = db.collection(SPOTIFY_COLLECTIONS.ALBUMS);
 
   const snapshot = await col.get();
   const cached: Record<string, Album> = {};
@@ -120,7 +120,7 @@ export const refreshAlbums = async (req: Request, res: Response) => {
   if (deletedAlbumIds.length > 0) {
     await Promise.all([
       ...deletedAlbumIds.map((albumId) =>
-        db.collection(COLLECTIONS.ALBUM_TRACKS).doc(albumId).delete()
+        db.collection(SPOTIFY_COLLECTIONS.ALBUM_TRACKS).doc(albumId).delete()
       ),
     ]);
   }
@@ -143,9 +143,9 @@ export const getAlbumTracks = async (req: Request, res: Response) => {
   }
 
   let query = db
-    .collection(COLLECTIONS.ALBUM_TRACKS)
+    .collection(SPOTIFY_COLLECTIONS.ALBUM_TRACKS)
     .doc(albumId)
-    .collection(COLLECTIONS.ALBUM_TRACKS__TRACKS)
+    .collection(SPOTIFY_COLLECTIONS.ALBUM_TRACKS__TRACKS)
     .limit(limit);
 
   if (cursorId) {
@@ -161,9 +161,9 @@ export const getAlbumTracks = async (req: Request, res: Response) => {
 
   // 総数
   const totalSnap = await db
-    .collection(COLLECTIONS.ALBUM_TRACKS)
+    .collection(SPOTIFY_COLLECTIONS.ALBUM_TRACKS)
     .doc(albumId)
-    .collection(COLLECTIONS.ALBUM_TRACKS__TRACKS)
+    .collection(SPOTIFY_COLLECTIONS.ALBUM_TRACKS__TRACKS)
     .count()
     .get();
   const total = totalSnap.data().count;
@@ -198,9 +198,9 @@ const refreshAlbumTracksCore = async (
   token: string
 ) => {
   const col = db
-    .collection(COLLECTIONS.ALBUM_TRACKS)
+    .collection(SPOTIFY_COLLECTIONS.ALBUM_TRACKS)
     .doc(albumId)
-    .collection(COLLECTIONS.ALBUM_TRACKS__TRACKS);
+    .collection(SPOTIFY_COLLECTIONS.ALBUM_TRACKS__TRACKS);
 
   const apiTracks = await getAlbumTracksApi(albumId, token);
 

@@ -9,7 +9,7 @@ if (!getApps().length) {
 
 export const db: Firestore = getFirestore();
 
-export const COLLECTIONS = {
+export const SPOTIFY_COLLECTIONS = {
   SAVED_TRACKS: "savedTracks",
   ALBUMS: "albums",
   ALBUM_TRACKS: "albumTracks",
@@ -19,4 +19,9 @@ export const COLLECTIONS = {
   PLAYLISTS: "playlists",
   PLAYLIST_TRACKS: "playlistTracks",
   PLAYLIST_TRACKS__TRACKS: "tracks",
+} as const;
+
+export const CONTEXT_COLLECTIONS = {
+  CONTEXT: "context",
+  CONTEXT__RECORDS: "records",
 } as const;
