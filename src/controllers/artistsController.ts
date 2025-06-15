@@ -9,20 +9,36 @@ import { classifyItems, toCountResponse } from "../services/classifyItems";
 
 export const getArtists = async (req: Request, res: Response) => {
   const ids = (req.query.ids as string)?.split(",") ?? [];
+  const limit = Number(req.query.limit ?? 100);
+  const cursorId = req.query.cursorId as string | undefined;
 
   const col = db.collection("saved_artists");
 
-  let docs;
   if (ids.length > 0) {
-    docs = await Promise.all(ids.map((id) => col.doc(id).get()));
+    // ids指定時はidsのアーティストを全件取得、ページネーション・limit無視
+    const docs = await Promise.all(ids.map((id) => col.doc(id).get()));
+    const artists = docs.filter((doc) => doc.exists).map((doc) => doc.data());
+    return res.json(artists);
   } else {
-    const snapshot = await col.get();
-    docs = snapshot.docs;
+    // ページネーション
+    let query = col.orderBy("id").limit(limit);
+    if (cursorId) {
+      query = query.startAfter(cursorId);
+    }
+    const snapshot = await query.get();
+    const artists = snapshot.docs.map((doc) => doc.data() as Artist);
+    // 次ページ用のカーソル
+    const last = artists[artists.length - 1];
+    const nextCursor = last ? { id: last.id } : undefined;
+    // 総数
+    const totalSnap = await col.count().get();
+    const total = totalSnap.data().count;
+    return res.json({
+      artists,
+      cursor: nextCursor,
+      total,
+    });
   }
-
-  const artists = docs.filter((doc) => doc.exists).map((doc) => doc.data());
-
-  return res.json(artists);
 };
 
 export async function refreshArtists(req: Request, res: Response) {

@@ -9,20 +9,36 @@ import { ValidationError } from "../types/error";
 
 export const getAlbums = async (req: Request, res: Response) => {
   const ids = (req.query.ids as string)?.split(",") ?? [];
+  const limit = Number(req.query.limit ?? 100);
+  const cursorId = req.query.cursorId as string | undefined;
 
   const col = db.collection("saved_albums");
 
-  let docs;
   if (ids.length > 0) {
-    docs = await Promise.all(ids.map((id) => col.doc(id).get()));
+    // ids指定時はidsのアルバムを全件取得、ページネーション・limit無視
+    const docs = await Promise.all(ids.map((id) => col.doc(id).get()));
+    const albums = docs.filter((doc) => doc.exists).map((doc) => doc.data());
+    return res.json(albums);
   } else {
-    const snapshot = await col.get();
-    docs = snapshot.docs;
+    // ページネーション
+    let query = col.orderBy("id").limit(limit);
+    if (cursorId) {
+      query = query.startAfter(cursorId);
+    }
+    const snapshot = await query.get();
+    const albums = snapshot.docs.map((doc) => doc.data() as Album);
+    // 次ページ用のカーソル
+    const last = albums[albums.length - 1];
+    const nextCursor = last ? { id: last.id } : undefined;
+    // 総数
+    const totalSnap = await col.count().get();
+    const total = totalSnap.data().count;
+    return res.json({
+      albums,
+      cursor: nextCursor,
+      total,
+    });
   }
-
-  const albums = docs.filter((doc) => doc.exists).map((doc) => doc.data());
-
-  return res.json(albums);
 };
 
 export const refreshAlbums = async (req: Request, res: Response) => {
