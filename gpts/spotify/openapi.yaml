@@ -1,65 +1,419 @@
 openapi: 3.1.0
 info:
   title: Spotify Relay API
-  description: >
-    This API relays arbitrary HTTP requests to the Spotify Web API via a single POST entrypoint.
-    Designed for use in Custom GPTs with API key authentication.
+  description: |
+    Spotifyアカウントのトラック・アーティスト・プレイリスト・アルバム情報を取得・同期・分析するAPI。
+    各エンドポイントはSpotify Web APIのキャッシュを返す。AIアクション用途向け。
   version: 1.0.0
 
 servers:
   - url: https://asia-northeast1-gpt-relay.cloudfunctions.net/relay/spotify
 
+security:
+  - ApiKeyAuth: []
+
 paths:
-  /:
+  /tracks:
+    get:
+      operationId: getSavedTracks
+      summary: 保存済みトラックを取得
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 100 }
+        - name: cursorId
+          in: query
+          schema: { type: string }
+        - name: cursorAddedAt
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: トラック一覧
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tracks:
+                    type: array
+                    items: { $ref: "#/components/schemas/Track" }
+                  cursor:
+                    $ref: "#/components/schemas/TrackCursor"
+                  total:
+                    type: integer
+  /tracks/refresh:
     post:
-      operationId: relay
-      summary: Relay a Spotify API request
-      description: >
-        Relays a specified HTTP request to the Spotify Web API.
-        Specify the method, path, and optional query/body parameters.
+      operationId: refreshSavedTracks
+      summary: 保存済みトラックを同期
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                force: { type: boolean }
+      responses:
+        "200":
+          description: 同期件数
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  created: { type: integer }
+                  refreshed: { type: integer }
+                  skipped: { type: integer }
+                  deleted: { type: integer }
+                  artists:
+                    type: object
+                    properties:
+                      created: { type: integer }
+
+  /artists:
+    get:
+      operationId: getArtists
+      summary: アーティスト情報を取得
+      parameters:
+        - name: ids
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 100 }
+        - name: cursorId
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: アーティスト一覧
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  artists:
+                    type: array
+                    items: { $ref: "#/components/schemas/Artist" }
+                  cursor:
+                    $ref: "#/components/schemas/ArtistCursor"
+                  total:
+                    type: integer
+  /artists/refresh:
+    post:
+      operationId: refreshArtists
+      summary: アーティスト情報を同期
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required:
-                - method
-                - path
               properties:
-                method:
-                  type: string
-                  enum: [GET, POST, PUT, DELETE, PATCH]
-                  description: HTTP method to use when calling the Spotify API
-                path:
-                  type: string
-                  description: Spotify API path (e.g. "/me/top/tracks")
-                query:
-                  type: object
-                  properties: {}
-                  additionalProperties:
-                    type: string
-                  description: Optional query parameters as key-value pairs
-                body:
-                  type: object
-                  properties: {}
-                  additionalProperties: true
-                  description: Optional request body (for POST, PUT, PATCH)
+                artistIds:
+                  type: array
+                  items: { type: string }
+                force: { type: boolean }
       responses:
         "200":
-          description: Successful relay of the request
+          description: 同期件数
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClassifyResultCount"
+
+  /following:
+    get:
+      operationId: getFollowingArtists
+      summary: フォロー中アーティストを取得
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 100 }
+        - name: cursorId
+          in: query
+          schema: { type: string }
+        - name: cursorFollowedAt
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: フォロー中アーティスト一覧
           content:
             application/json:
               schema:
                 type: object
-                description: Response from the Spotify API
-                properties: {} # ✅ 必須
-        "400":
-          description: Malformed or incomplete request body
-        "401":
-          description: Unauthorized (invalid or missing API key)
-        "500":
-          description: Internal server error
+                properties:
+                  artists:
+                    type: array
+                    items: { $ref: "#/components/schemas/FollowingArtist" }
+                  cursor:
+                    $ref: "#/components/schemas/FollowingArtistCursor"
+                  total:
+                    type: integer
+  /following/refresh:
+    post:
+      operationId: refreshFollowingArtists
+      summary: フォロー中アーティストを同期
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                force: { type: boolean }
+      responses:
+        "200":
+          description: 同期件数
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClassifyResultCount"
+
+  /playlists:
+    get:
+      operationId: getPlaylists
+      summary: プレイリスト一覧を取得
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 100 }
+        - name: cursorId
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: プレイリスト一覧
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  playlists:
+                    type: array
+                    items: { $ref: "#/components/schemas/Playlist" }
+                  cursor:
+                    $ref: "#/components/schemas/PlaylistCursor"
+                  total:
+                    type: integer
+  /playlists/refresh:
+    post:
+      operationId: refreshPlaylists
+      summary: プレイリストを同期
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                force: { type: boolean }
+      responses:
+        "200":
+          description: 同期件数
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  created: { type: integer }
+                  refreshed: { type: integer }
+                  skipped: { type: integer }
+                  deleted: { type: integer }
+                  tracks:
+                    type: array
+                    items: { $ref: "#/components/schemas/ClassifyResultCount" }
+
+  /playlists/{playlistId}:
+    get:
+      operationId: getPlaylistTracks
+      summary: プレイリスト内トラックを取得
+      parameters:
+        - name: playlistId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 100 }
+        - name: cursorId
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: プレイリストトラック一覧
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tracks:
+                    type: array
+                    items: { $ref: "#/components/schemas/PlaylistTrack" }
+                  cursor:
+                    $ref: "#/components/schemas/PlaylistTrackCursor"
+                  total:
+                    type: integer
+  /playlists/{playlistId}/refresh:
+    post:
+      operationId: refreshPlaylistTracks
+      summary: プレイリスト内トラックを同期
+      parameters:
+        - name: playlistId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                force: { type: boolean }
+      responses:
+        "200":
+          description: 同期件数
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClassifyResultCount"
+
+  /albums:
+    get:
+      operationId: getAlbums
+      summary: アルバム情報を取得
+      parameters:
+        - name: ids
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 100 }
+        - name: cursorId
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: アルバム一覧
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  albums:
+                    type: array
+                    items: { $ref: "#/components/schemas/Album" }
+                  cursor:
+                    $ref: "#/components/schemas/AlbumCursor"
+                  total:
+                    type: integer
+  /albums/refresh:
+    post:
+      operationId: refreshAlbums
+      summary: アルバム情報を同期
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                albumIds:
+                  type: array
+                  items: { type: string }
+                force: { type: boolean }
+      responses:
+        "200":
+          description: 同期件数
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  created: { type: integer }
+                  refreshed: { type: integer }
+                  skipped: { type: integer }
+                  deleted: { type: integer }
+                  tracks:
+                    type: array
+                    items: { $ref: "#/components/schemas/ClassifyResultCount" }
+
+  /albums/{albumId}:
+    get:
+      operationId: getAlbumTracks
+      summary: アルバム内トラックを取得
+      parameters:
+        - name: albumId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 100 }
+        - name: cursorId
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: アルバムトラック一覧
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tracks:
+                    type: array
+                    items: { $ref: "#/components/schemas/AlbumTrack" }
+                  cursor:
+                    $ref: "#/components/schemas/AlbumTrackCursor"
+                  total:
+                    type: integer
+  /albums/{albumId}/refresh:
+    post:
+      operationId: refreshAlbumTracks
+      summary: アルバム内トラックを同期
+      parameters:
+        - name: albumId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                force: { type: boolean }
+      responses:
+        "200":
+          description: 同期件数
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClassifyResultCount"
+
+  /analysis/genres:
+    get:
+      operationId: analyzeGenres
+      summary: ジャンル頻度を集計
+      responses:
+        "200":
+          description: ジャンルごとの件数
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  genres:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        genre: { type: string }
+                        count: { type: integer }
+                  total:
+                    type: integer
+                  message:
+                    type: string
 
 components:
   securitySchemes:
@@ -67,13 +421,128 @@ components:
       type: apiKey
       in: header
       name: X-API-KEY
+
   schemas:
-    Foo:
+    Track:
       type: object
       properties:
-        bar:
-          type: string
-          description: bar desc.
-
-security:
-  - ApiKeyAuth: []
+        id: { type: string }
+        name: { type: string }
+        artists:
+          type: array
+          items: { $ref: "#/components/schemas/ArtistSimplified" }
+        album:
+          type: object
+          properties:
+            id: { type: string }
+            name: { type: string }
+        duration_ms: { type: integer }
+        explicit: { type: boolean }
+        popularity: { type: integer }
+        addedAt: { type: string, format: date-time }
+    TrackCursor:
+      type: object
+      properties:
+        id: { type: string }
+        addedAt: { type: string, format: date-time }
+    ArtistSimplified:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+    Artist:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        genres:
+          type: array
+          items: { type: string }
+        popularity: { type: integer }
+        followers: { type: integer }
+    ArtistCursor:
+      type: object
+      properties:
+        id: { type: string }
+    FollowingArtist:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        genres:
+          type: array
+          items: { type: string }
+        popularity: { type: integer }
+        followers: { type: integer }
+        followedAt: { type: string, format: date-time }
+    FollowingArtistCursor:
+      type: object
+      properties:
+        id: { type: string }
+        followedAt: { type: string, format: date-time }
+    Playlist:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        total: { type: integer }
+        owner:
+          type: object
+          properties:
+            id: { type: string }
+            displayName: { type: string }
+        public: { type: boolean }
+    PlaylistCursor:
+      type: object
+      properties:
+        id: { type: string }
+    PlaylistTrack:
+      type: object
+      properties:
+        id: { type: string }
+        addedAt: { type: string, format: date-time }
+        track:
+          $ref: "#/components/schemas/Track"
+    PlaylistTrackCursor:
+      type: object
+      properties:
+        id: { type: string }
+    Album:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        artists:
+          type: array
+          items: { $ref: "#/components/schemas/ArtistSimplified" }
+        releaseDate: { type: string }
+        totalTracks: { type: integer }
+        albumType: { type: string }
+        popularity: { type: integer }
+    AlbumCursor:
+      type: object
+      properties:
+        id: { type: string }
+    AlbumTrack:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        artists:
+          type: array
+          items: { $ref: "#/components/schemas/ArtistSimplified" }
+        duration_ms: { type: integer }
+        explicit: { type: boolean }
+    AlbumTrackCursor:
+      type: object
+      properties:
+        id: { type: string }
+    ClassifyResultCount:
+      type: object
+      description: データ同期時の件数サマリ
+      properties:
+        created: { type: integer }
+        refreshed: { type: integer }
+        skipped: { type: integer }
+        deleted: { type: integer }
