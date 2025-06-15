@@ -3,9 +3,14 @@
 import { Request, Response } from "express";
 import { COLLECTIONS, db } from "../lib/firestore";
 import { classifyItems, toCountResponse } from "../services/classifyItems";
-import { getAccessToken, getSeveralAlbums } from "../lib/spotify";
-import { Album } from "../types/albums";
+import {
+  getAccessToken,
+  getSeveralAlbums,
+  getAlbumTracks as getAlbumTracksApi,
+} from "../lib/spotify";
+import { Album, AlbumTrack } from "../types/albums";
 import { ValidationError } from "../types/error";
+import { FieldPath } from "firebase-admin/firestore";
 
 export const getAlbums = async (req: Request, res: Response) => {
   const rawIds = req.query.ids as string | undefined;
@@ -22,7 +27,7 @@ export const getAlbums = async (req: Request, res: Response) => {
     return res.json(albums);
   } else {
     // ページネーション
-    let query = col.orderBy("id").limit(limit);
+    let query = col.orderBy(FieldPath.documentId()).limit(limit);
     if (cursorId) {
       query = query.startAfter(cursorId);
     }
@@ -85,7 +90,7 @@ export const refreshAlbums = async (req: Request, res: Response) => {
     popularity: a.popularity,
   }));
 
-  const result = classifyItems({
+  const classifyResult = classifyItems({
     apiItems,
     cached,
     idSelector: (a) => a.id,
@@ -93,10 +98,145 @@ export const refreshAlbums = async (req: Request, res: Response) => {
   });
 
   await Promise.all([
-    ...result.createItems.map((a) => col.doc(a.id).set(a)),
-    ...result.refreshItems.map((a) => col.doc(a.id).set(a)),
+    ...classifyResult.createItems.map((a) => col.doc(a.id).set(a)),
+    ...classifyResult.refreshItems.map((a) => col.doc(a.id).set(a)),
+    ...classifyResult.deletedIds.map((id) => col.doc(id).delete()),
+  ]);
+
+  // アルバムのトラックも更新
+  const toRefreshAlbums = [
+    ...classifyResult.createItems,
+    ...classifyResult.refreshItems,
+  ];
+  const tracksResults = [];
+  for (const album of toRefreshAlbums) {
+    const res = await refreshAlbumTracksCore(album.id, false, token);
+    tracksResults.push(res);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  // 削除されたアルバムのトラックも削除
+  const deletedAlbumIds = classifyResult.deletedIds;
+  if (deletedAlbumIds.length > 0) {
+    await Promise.all([
+      ...deletedAlbumIds.map((albumId) =>
+        db.collection(COLLECTIONS.ALBUM_TRACKS).doc(albumId).delete()
+      ),
+    ]);
+  }
+
+  const result = {
+    ...toCountResponse(classifyResult),
+    tracks: tracksResults,
+  };
+
+  return res.json(result);
+};
+
+export const getAlbumTracks = async (req: Request, res: Response) => {
+  const { albumId } = req.params;
+  const limit = Number(req.query.limit ?? 100);
+  const cursorId = req.query.cursorId as string | undefined;
+
+  if (!albumId) {
+    throw new ValidationError("albumId is required.");
+  }
+
+  let query = db
+    .collection(COLLECTIONS.ALBUM_TRACKS)
+    .doc(albumId)
+    .collection(COLLECTIONS.ALBUM_TRACKS__TRACKS)
+    .limit(limit);
+
+  if (cursorId) {
+    query = query.startAfter(cursorId);
+  }
+
+  const snapshot = await query.get();
+  const tracks = snapshot.docs.map((doc) => doc.data() as AlbumTrack);
+
+  // 次ページ用のカーソル
+  const last = tracks[tracks.length - 1];
+  const nextCursor = last ? { id: last.id } : undefined;
+
+  // 総数
+  const totalSnap = await db
+    .collection(COLLECTIONS.ALBUM_TRACKS)
+    .doc(albumId)
+    .collection(COLLECTIONS.ALBUM_TRACKS__TRACKS)
+    .count()
+    .get();
+  const total = totalSnap.data().count;
+
+  return res.json({
+    tracks,
+    cursor: nextCursor,
+    total,
+  });
+};
+
+export const refreshAlbumTracks = async (req: Request, res: Response) => {
+  const { albumId } = req.params;
+  const { force = false } = req.body as {
+    force?: boolean;
+  };
+
+  if (!albumId) {
+    throw new ValidationError("albumId is required.");
+  }
+
+  const token = await getAccessToken();
+
+  const result = await refreshAlbumTracksCore(albumId, force, token);
+
+  return res.json(result);
+};
+
+const refreshAlbumTracksCore = async (
+  albumId: string,
+  force: boolean,
+  token: string
+) => {
+  const col = db
+    .collection(COLLECTIONS.ALBUM_TRACKS)
+    .doc(albumId)
+    .collection(COLLECTIONS.ALBUM_TRACKS__TRACKS);
+
+  const apiTracks = await getAlbumTracksApi(albumId, token);
+
+  const apiItems: AlbumTrack[] = apiTracks.map((t) => ({
+    id: t.id,
+    name: t.name,
+    artists: t.artists.map((artist) => ({
+      id: artist.id,
+      name: artist.name,
+    })),
+    duration_ms: t.duration_ms,
+    explicit: t.explicit,
+  }));
+
+  // Firestoreから現在のキャッシュを取得
+  const snapshot = await col.get();
+  const cached: Record<string, AlbumTrack> = {};
+  snapshot.docs.forEach((doc) => {
+    if (doc.exists) cached[doc.id] = doc.data() as AlbumTrack;
+  });
+
+  // 差分判定
+  const result = classifyItems({
+    apiItems,
+    cached,
+    idSelector: (p) => p.id,
+    equalsKeys: ["id", "name", "artists", "duration_ms", "explicit"],
+    force,
+  });
+
+  // Firestore更新
+  await Promise.all([
+    ...result.createItems.map((p) => col.doc(p.id).set(p)),
+    ...result.refreshItems.map((p) => col.doc(p.id).set(p)),
     ...result.deletedIds.map((id) => col.doc(id).delete()),
   ]);
 
-  return res.json(toCountResponse(result));
+  return toCountResponse(result);
 };

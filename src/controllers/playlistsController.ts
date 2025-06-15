@@ -92,20 +92,17 @@ export const refreshPlaylists = async (req: Request, res: Response) => {
   ];
   const tracksResults = [];
   for (const playlist of toRefreshPlaylists) {
-    const tracksResult = await refreshPlaylistTracksCore(
-      playlist.id,
-      false,
-      token
-    );
-    tracksResults.push(tracksResult);
+    const res = await refreshPlaylistTracksCore(playlist.id, false, token);
+    tracksResults.push(res);
+    await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
   // 削除されたプレイリストのトラックも削除
   const deletedPlaylistIds = classifyResult.deletedIds;
   if (deletedPlaylistIds.length > 0) {
     await Promise.all(
-      deletedPlaylistIds.map((id) =>
-        db.collection(COLLECTIONS.PLAYLIST_TRACKS).doc(id).delete()
+      deletedPlaylistIds.map((playlistId) =>
+        db.collection(COLLECTIONS.PLAYLIST_TRACKS).doc(playlistId).delete()
       )
     );
   }
@@ -119,17 +116,17 @@ export const refreshPlaylists = async (req: Request, res: Response) => {
 };
 
 export const getPlaylistTracks = async (req: Request, res: Response) => {
-  const { trackId } = req.params;
+  const { playlistId } = req.params;
   const limit = Number(req.query.limit ?? 100);
   const cursorId = req.query.cursorId as string | undefined;
 
-  if (!trackId) {
-    throw new ValidationError("trackId is required.");
+  if (!playlistId) {
+    throw new ValidationError("playlistId is required.");
   }
 
   let query = db
     .collection(COLLECTIONS.PLAYLIST_TRACKS)
-    .doc(trackId)
+    .doc(playlistId)
     .collection(COLLECTIONS.PLAYLIST_TRACKS__TRACKS)
     .limit(limit);
 
@@ -147,7 +144,7 @@ export const getPlaylistTracks = async (req: Request, res: Response) => {
   // 総数
   const totalSnap = await db
     .collection(COLLECTIONS.PLAYLIST_TRACKS)
-    .doc(trackId)
+    .doc(playlistId)
     .collection(COLLECTIONS.PLAYLIST_TRACKS__TRACKS)
     .count()
     .get();

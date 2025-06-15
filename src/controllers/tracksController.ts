@@ -10,6 +10,7 @@ import { SavedTrack } from "../types/tracks";
 import { classifyItems, toCountResponse } from "../services/classifyItems";
 import { COLLECTIONS, db } from "../lib/firestore";
 import { Artist } from "../types/artists";
+import { FieldPath } from "firebase-admin/firestore";
 
 export const getTracks = async (req: Request, res: Response) => {
   const limit = Number(req.query.limit ?? 100);
@@ -19,7 +20,7 @@ export const getTracks = async (req: Request, res: Response) => {
   let query = db
     .collection(COLLECTIONS.SAVED_TRACKS)
     .orderBy("addedAt")
-    .orderBy("id")
+    .orderBy(FieldPath.documentId())
     .limit(limit);
 
   if (cursorId && cursorAddedAt) {

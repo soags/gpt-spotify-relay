@@ -54,6 +54,24 @@ export const getPlaylistItems = async (playlistId: string, token: string) => {
   });
 };
 
+export const getAlbumTracks = async (albumId: string, token: string) => {
+  return await fetchAllPaginated<
+    SpotifyApi.TrackObjectSimplified,
+    SpotifyApi.AlbumTracksResponse
+  >({
+    getUrl: (_page, limit, offset) => {
+      const url = new URL(`${SPOTIFY_API_BASE_URL}/albums/${albumId}/tracks`);
+      const searchParams = new URLSearchParams({ limit: String(limit) });
+      if (offset > 0) searchParams.append("offset", String(offset));
+      url.search = searchParams.toString();
+      return url;
+    },
+    extractItems: (res) => res.items,
+    extractNext: (res, _page, offset) => offset < res.total,
+    token,
+  });
+};
+
 export const getSeveralArtists = async (ids: string[], token: string) => {
   const url = new URL(`${SPOTIFY_API_BASE_URL}/artists`);
   url.searchParams.append("ids", ids.join(","));

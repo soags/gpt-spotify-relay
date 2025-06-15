@@ -6,6 +6,7 @@ import { COLLECTIONS, db } from "../lib/firestore";
 import { ValidationError } from "../types/error";
 import { Artist } from "../types/artists";
 import { classifyItems, toCountResponse } from "../services/classifyItems";
+import { FieldPath } from "firebase-admin/firestore";
 
 export const getArtists = async (req: Request, res: Response) => {
   const rawIds = req.query.ids as string | undefined;
@@ -22,7 +23,7 @@ export const getArtists = async (req: Request, res: Response) => {
     return res.json(artists);
   } else {
     // ページネーション
-    let query = col.orderBy("id").limit(limit);
+    let query = col.orderBy(FieldPath.documentId()).limit(limit);
     if (cursorId) {
       query = query.startAfter(cursorId);
     }

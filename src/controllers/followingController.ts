@@ -5,6 +5,7 @@ import { getAccessToken, getFollowedArtists } from "../lib/spotify";
 import { COLLECTIONS, db } from "../lib/firestore";
 import { FollowingArtist } from "../types/artists";
 import { classifyItems, toCountResponse } from "../services/classifyItems";
+import { FieldPath } from "firebase-admin/firestore";
 
 export const getFollowing = async (req: Request, res: Response) => {
   const limit = Number(req.query.limit ?? 100);
@@ -14,7 +15,7 @@ export const getFollowing = async (req: Request, res: Response) => {
   let query = db
     .collection(COLLECTIONS.FOLLOWING_ARTISTS)
     .orderBy("followedAt")
-    .orderBy("id")
+    .orderBy(FieldPath.documentId())
     .limit(limit);
 
   if (cursorId && cursorFollowedAt) {

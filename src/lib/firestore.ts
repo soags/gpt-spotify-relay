@@ -13,6 +13,7 @@ export const COLLECTIONS = {
   SAVED_TRACKS: "savedTracks",
   ALBUMS: "albums",
   ALBUM_TRACKS: "albumTracks",
+  ALBUM_TRACKS__TRACKS: "tracks",
   ARTISTS: "artists",
   FOLLOWING_ARTISTS: "followingArtists",
   PLAYLISTS: "playlists",

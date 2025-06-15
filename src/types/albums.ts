@@ -1,5 +1,7 @@
 // src/types/albums.ts
 
+import { Track } from "./tracks";
+
 export type Album = {
   id: string;
   name: string;
@@ -12,3 +14,5 @@ export type Album = {
   albumType: string;
   popularity: number;
 };
+
+export type AlbumTrack = Omit<Track, "album" | "popularity">;
