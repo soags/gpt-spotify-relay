@@ -116,7 +116,7 @@ export async function saveContextBatch(
   req: Request<object, SaveContextBatchResponse, SaveContextBatchBody, object>,
   res: Response<SaveContextBatchResponse>
 ): Promise<void> {
-  const payload = req.body;
+  const payload = req.body?.contexts;
 
   if (!payload) {
     throw new ValidationError("Payload is required.");

@@ -13,7 +13,9 @@ export type GetContextParams = {
 
 export type SaveContextBody = ContextRecord;
 
-export type SaveContextBatchBody = ContextRecord[];
+export type SaveContextBatchBody = {
+  contexts: ContextRecord[];
+};
 
 export type DeleteContextParams = {
   id: string;

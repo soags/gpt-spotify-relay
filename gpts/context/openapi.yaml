@@ -1,0 +1,262 @@
+openapi: 3.1.0
+info:
+  title: Context Vault API
+  description: |
+    GPTモデルのコンテキストデータを保存・取得・削除するAPI。AIアクション用途専用。
+    - チャット履歴や知識断片などを保存・再利用できます。
+    - contextIdは一意なIDです。
+  version: 1.0.0
+
+servers:
+  - url: https://asia-northeast1-gpt-relay.cloudfunctions.net/relay/context
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /:
+    get:
+      operationId: listContexts
+      summary: コンテキスト一覧取得
+      description: 保存済みコンテキストのリストを取得します。
+      parameters:
+        - name: keywords
+          in: query
+          schema:
+            type: string
+          description: キーワードでフィルタ
+        - name: limit
+          in: query
+          schema:
+            type: string
+          description: 最大取得件数
+        - name: cursorId
+          in: query
+          schema:
+            type: string
+          description: ページネーション用カーソルID
+      responses:
+        "200":
+          description: 一覧取得成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListContextsResponse"
+
+    post:
+      operationId: saveContext
+      summary: コンテキスト保存
+      description: 新規または既存のコンテキストを保存します。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContextRecord"
+      responses:
+        "200":
+          description: 保存成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SaveContextResponse"
+
+  /batch:
+    post:
+      operationId: saveContextBatch
+      summary: コンテキスト一括保存
+      description: 複数のコンテキストをまとめて保存します。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                contexts:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/ContextRecord"
+              required: [contexts]
+      responses:
+        "200":
+          description: 一括保存成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SaveContextBatchResponse"
+
+  /{id}:
+    get:
+      operationId: getContext
+      summary: コンテキスト取得
+      description: contextIdで指定したコンテキストを取得します。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: コンテキストID
+      responses:
+        "200":
+          description: 取得成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetContextResponse"
+        "404":
+          description: 見つからない場合
+
+    delete:
+      operationId: deleteContext
+      summary: コンテキスト削除
+      description: contextIdで指定したコンテキストを削除します。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: コンテキストID
+      responses:
+        "200":
+          description: 削除成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteContextResponse"
+        "404":
+          description: 見つからない場合
+
+  /health:
+    get:
+      operationId: healthCheck
+      summary: ヘルスチェック
+      description: サービスの稼働確認用
+      responses:
+        "200":
+          description: サービス稼働中
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+
+  schemas:
+    Section:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [user, assistant]
+          description: 発話者の役割
+        text:
+          type: string
+          description: セクション本文
+        tokenCount:
+          type: integer
+          description: トークン数
+      required: [role, text, tokenCount]
+
+    ContextRecord:
+      type: object
+      properties:
+        contextId:
+          type: string
+          description: 一意なID
+        summary:
+          type: string
+          description: 一文要約
+        keywords:
+          type: array
+          items:
+            type: string
+          description: トピック・分類タグ
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/Section"
+          description: チャットセクション配列
+        createdAt:
+          type: string
+          format: date-time
+          description: 作成日時
+        updatedAt:
+          type: string
+          format: date-time
+          description: 更新日時
+      required: [contextId, summary, keywords, sections, createdAt, updatedAt]
+
+    ContextRecordSimplified:
+      type: object
+      properties:
+        contextId:
+          type: string
+        summary:
+          type: string
+        keywords:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [contextId, summary, keywords, createdAt, updatedAt]
+
+    ListContextsResponse:
+      type: object
+      properties:
+        contexts:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContextRecordSimplified"
+        cursor:
+          type: object
+          properties:
+            id:
+              type: string
+          required: [id]
+          description: 次ページ取得用カーソル
+      required: [contexts]
+
+    GetContextResponse:
+      $ref: "#/components/schemas/ContextRecord"
+
+    SaveContextResponse:
+      type: object
+      properties:
+        contextId:
+          type: string
+      required: [contextId]
+
+    SaveContextBatchResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+        contextIds:
+          type: array
+          items:
+            type: string
+      required: [count, contextIds]
+
+    DeleteContextResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+      required: [ok]
