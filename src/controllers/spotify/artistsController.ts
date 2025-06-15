@@ -1,6 +1,12 @@
 // src/controllers/artistsController.ts
 
 import { Request, Response } from "express";
+import { ArtistsResponse } from "../../types/spotify/response";
+import { ClassifyResultCount } from "../../services/classifyItems";
+import {
+  GetArtistsQuery,
+  RefreshArtistsBody,
+} from "../../types/spotify/request";
 
 import { FieldPath } from "firebase-admin/firestore";
 import { db, SPOTIFY_COLLECTIONS } from "../../lib/firestore";
@@ -9,7 +15,10 @@ import { classifyItems, toCountResponse } from "../../services/classifyItems";
 import { ValidationError } from "../../types/error";
 import { Artist } from "../../types/spotify/artists";
 
-export async function getArtists(req: Request, res: Response): Promise<void> {
+export async function getArtists(
+  req: Request<object, ArtistsResponse | Artist[], object, GetArtistsQuery>,
+  res: Response<ArtistsResponse | Artist[]>
+): Promise<void> {
   const rawIds = req.query.ids as string | undefined;
   const ids = rawIds?.trim() ? rawIds.split(",").filter(Boolean) : [];
   const limit = Number(req.query.limit ?? 100);
@@ -49,8 +58,8 @@ export async function getArtists(req: Request, res: Response): Promise<void> {
 }
 
 export async function refreshArtists(
-  req: Request,
-  res: Response
+  req: Request<object, ClassifyResultCount, RefreshArtistsBody, object>,
+  res: Response<ClassifyResultCount>
 ): Promise<void> {
   const token = await getAccessToken();
 

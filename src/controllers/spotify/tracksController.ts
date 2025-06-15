@@ -11,8 +11,16 @@ import {
 import { classifyItems, toCountResponse } from "../../services/classifyItems";
 import { Artist } from "../../types/spotify/artists";
 import { SavedTrack } from "../../types/spotify/tracks";
+import {
+  TracksResponse,
+  RefreshTracksResponse,
+} from "../../types/spotify/response";
+import { GetTracksQuery, RefreshTracksBody } from "../../types/spotify/request";
 
-export async function getTracks(req: Request, res: Response): Promise<void> {
+export async function getTracks(
+  req: Request<object, TracksResponse, object, GetTracksQuery>,
+  res: Response<TracksResponse>
+): Promise<void> {
   const limit = Number(req.query.limit ?? 100);
   const cursorId = req.query.cursorId as string | undefined;
   const cursorAddedAt = req.query.cursorAddedAt as string | undefined;
@@ -51,8 +59,8 @@ export async function getTracks(req: Request, res: Response): Promise<void> {
 }
 
 export async function refreshTracks(
-  req: Request,
-  res: Response
+  req: Request<object, RefreshTracksResponse, RefreshTracksBody, object>,
+  res: Response<RefreshTracksResponse>
 ): Promise<void> {
   const token = await getAccessToken();
 

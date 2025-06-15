@@ -6,8 +6,17 @@ import { db, SPOTIFY_COLLECTIONS } from "../../lib/firestore";
 import { getAccessToken, getFollowedArtists } from "../../lib/spotify";
 import { classifyItems, toCountResponse } from "../../services/classifyItems";
 import { FollowingArtist } from "../../types/spotify/artists";
+import { FollowingArtistsResponse } from "../../types/spotify/response";
+import { ClassifyResultCount } from "../../services/classifyItems";
+import {
+  GetFollowingQuery,
+  RefreshFollowingBody,
+} from "../../types/spotify/request";
 
-export async function getFollowing(req: Request, res: Response): Promise<void> {
+export async function getFollowing(
+  req: Request<object, FollowingArtistsResponse, object, GetFollowingQuery>,
+  res: Response<FollowingArtistsResponse>
+): Promise<void> {
   const limit = Number(req.query.limit ?? 100);
   const cursorId = req.query.cursorId as string | undefined;
   const cursorFollowedAt = req.query.cursorFollowedAt as string | undefined;
@@ -48,8 +57,8 @@ export async function getFollowing(req: Request, res: Response): Promise<void> {
 }
 
 export async function refreshFollowing(
-  req: Request,
-  res: Response
+  req: Request<object, ClassifyResultCount, RefreshFollowingBody, object>,
+  res: Response<ClassifyResultCount>
 ): Promise<void> {
   const token = await getAccessToken();
 

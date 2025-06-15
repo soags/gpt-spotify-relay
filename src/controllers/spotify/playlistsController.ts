@@ -14,8 +14,24 @@ import {
 } from "../../services/classifyItems";
 import { ValidationError } from "../../types/error";
 import { Playlist, PlaylistTrack } from "../../types/spotify/playlist";
+import {
+  PlaylistsResponse,
+  RefreshPlaylistsResponse,
+  PlaylistTracksResponse,
+} from "../../types/spotify/response";
+import {
+  GetPlaylistsQuery,
+  RefreshPlaylistsBody,
+  GetPlaylistTracksParams,
+  GetPlaylistTracksQuery,
+  RefreshPlaylistTracksParams,
+  RefreshPlaylistTracksBody,
+} from "../../types/spotify/request";
 
-export async function getPlaylists(req: Request, res: Response): Promise<void> {
+export async function getPlaylists(
+  req: Request<object, PlaylistsResponse, object, GetPlaylistsQuery>,
+  res: Response<PlaylistsResponse>
+): Promise<void> {
   const limit = Number(req.query.limit ?? 100);
   const cursorId = req.query.cursorId as string | undefined;
 
@@ -49,8 +65,8 @@ export async function getPlaylists(req: Request, res: Response): Promise<void> {
 }
 
 export async function refreshPlaylists(
-  req: Request,
-  res: Response
+  req: Request<object, RefreshPlaylistsResponse, RefreshPlaylistsBody, object>,
+  res: Response<RefreshPlaylistsResponse>
 ): Promise<void> {
   const token = await getAccessToken();
 
@@ -131,8 +147,13 @@ export async function refreshPlaylists(
 }
 
 export async function getPlaylistTracks(
-  req: Request,
-  res: Response
+  req: Request<
+    GetPlaylistTracksParams,
+    PlaylistTracksResponse,
+    object,
+    GetPlaylistTracksQuery
+  >,
+  res: Response<PlaylistTracksResponse>
 ): Promise<void> {
   const { playlistId } = req.params;
   const limit = Number(req.query.limit ?? 100);
@@ -178,8 +199,13 @@ export async function getPlaylistTracks(
 }
 
 export async function refreshPlaylistTracks(
-  req: Request,
-  res: Response
+  req: Request<
+    RefreshPlaylistTracksParams,
+    ClassifyResultCount,
+    RefreshPlaylistTracksBody,
+    object
+  >,
+  res: Response<ClassifyResultCount>
 ): Promise<void> {
   const { playlistId } = req.params;
   const { force = false } = req.body as {

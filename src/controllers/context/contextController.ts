@@ -1,23 +1,31 @@
 // src/controllers/context/contextController.ts
 
 import { Request, Response } from "express";
+import {
+  ListContextsResponse,
+  GetContextResponse,
+  SaveContextResponse,
+  SaveContextBatchResponse,
+  DeleteContextResponse,
+} from "../../types/context/response";
 import { ContextRecord, ContextRecordSimplified } from "../../types/context";
 import { CONTEXT_COLLECTIONS, db } from "../../lib/firestore";
 import { NotFoundError, ValidationError } from "../../types/error";
 import slugify from "slugify";
+import {
+  ListContextsQuery,
+  GetContextParams,
+  SaveContextBody,
+  SaveContextBatchBody,
+  DeleteContextParams,
+} from "../../types/context/request";
 
 const userId = "defaultUser";
 
-type SaveContextResponse = {
-  contextId: string;
-};
-
-type SaveContextBatchResponse = {
-  count: number;
-  contextIds: string[];
-};
-
-export async function listContexts(req: Request, res: Response): Promise<void> {
+export async function listContexts(
+  req: Request<object, ListContextsResponse, object, ListContextsQuery>,
+  res: Response<ListContextsResponse>
+): Promise<void> {
   const keywordFilter = req.query.keywords as string | undefined;
   const limit = Number(req.query.limit) || 20;
   const cursorId = req.query.cursorId as string | undefined;
@@ -57,7 +65,10 @@ export async function listContexts(req: Request, res: Response): Promise<void> {
   });
 }
 
-export async function getContext(req: Request, res: Response): Promise<void> {
+export async function getContext(
+  req: Request<GetContextParams, GetContextResponse, object, object>,
+  res: Response<GetContextResponse>
+): Promise<void> {
   const contextId = req.params.id;
 
   if (!contextId) {
@@ -80,7 +91,10 @@ export async function getContext(req: Request, res: Response): Promise<void> {
   res.json(context);
 }
 
-export async function saveContext(req: Request, res: Response): Promise<void> {
+export async function saveContext(
+  req: Request<object, SaveContextResponse, SaveContextBody, object>,
+  res: Response<SaveContextResponse>
+): Promise<void> {
   const payload = req.body as ContextRecord;
   if (!payload) {
     throw new ValidationError("Payload is required.");
@@ -95,12 +109,12 @@ export async function saveContext(req: Request, res: Response): Promise<void> {
 
   res.json({
     contextId: result.contextIds[0],
-  } as SaveContextResponse);
+  });
 }
 
 export async function saveContextBatch(
-  req: Request,
-  res: Response
+  req: Request<object, SaveContextBatchResponse, SaveContextBatchBody, object>,
+  res: Response<SaveContextBatchResponse>
 ): Promise<void> {
   const payload = req.body;
 
@@ -164,8 +178,8 @@ export async function saveContextBatchCore(
 }
 
 export async function deleteContext(
-  req: Request,
-  res: Response
+  req: Request<DeleteContextParams, DeleteContextResponse, object, object>,
+  res: Response<DeleteContextResponse>
 ): Promise<void> {
   const contextId = req.params.id;
   if (!contextId) throw new ValidationError("Missing contextId");

@@ -1,9 +1,10 @@
 import { Request, Response } from "express";
 import { db, SPOTIFY_COLLECTIONS } from "../../lib/firestore";
+import { GenreAnalysisResponse } from "../../types/spotify/response";
 
 export async function getGenreAnalysis(
   req: Request,
-  res: Response
+  res: Response<GenreAnalysisResponse>
 ): Promise<void> {
   const col = db.collection(SPOTIFY_COLLECTIONS.ARTISTS);
   const snapshot = await col.get();

@@ -1,8 +1,17 @@
 // src/controllers/albumsController.ts
 
 import { Request, Response } from "express";
+import {
+  AlbumsResponse,
+  RefreshPlaylistsResponse,
+  AlbumTracksResponse,
+} from "../../types/spotify/response";
 import { SPOTIFY_COLLECTIONS, db } from "../../lib/firestore";
-import { classifyItems, toCountResponse } from "../../services/classifyItems";
+import {
+  classifyItems,
+  toCountResponse,
+  ClassifyResultCount,
+} from "../../services/classifyItems";
 import {
   getAccessToken,
   getSeveralAlbums,
@@ -11,8 +20,19 @@ import {
 import { Album, AlbumTrack } from "../../types/spotify/albums";
 import { ValidationError } from "../../types/error";
 import { FieldPath } from "firebase-admin/firestore";
+import {
+  GetAlbumsQuery,
+  RefreshAlbumsBody,
+  GetAlbumTracksParams,
+  GetAlbumTracksQuery,
+  RefreshAlbumTracksParams,
+  RefreshAlbumTracksBody,
+} from "../../types/spotify/request";
 
-export async function getAlbums(req: Request, res: Response): Promise<void> {
+export async function getAlbums(
+  req: Request<object, AlbumsResponse, object, GetAlbumsQuery>,
+  res: Response<AlbumsResponse>
+): Promise<void> {
   const rawIds = req.query.ids as string | undefined;
   const ids = rawIds?.trim() ? rawIds.split(",").filter(Boolean) : [];
   const limit = Number(req.query.limit ?? 100);
@@ -23,8 +43,14 @@ export async function getAlbums(req: Request, res: Response): Promise<void> {
   if (ids.length > 0) {
     // ids指定時はidsのアルバムを全件取得、ページネーション・limit無視
     const docs = await Promise.all(ids.map((id) => col.doc(id).get()));
-    const albums = docs.filter((doc) => doc.exists).map((doc) => doc.data());
-    res.json(albums);
+    const albums = docs
+      .filter((doc) => doc.exists)
+      .map((doc) => ({ ...doc.data(), id: doc.id } as Album));
+    res.json({
+      albums,
+      cursor: undefined,
+      total: albums.length,
+    });
   } else {
     // ページネーション
     let query = col.orderBy(FieldPath.documentId()).limit(limit);
@@ -50,8 +76,8 @@ export async function getAlbums(req: Request, res: Response): Promise<void> {
 }
 
 export async function refreshAlbums(
-  req: Request,
-  res: Response
+  req: Request<object, RefreshPlaylistsResponse, RefreshAlbumsBody, object>,
+  res: Response<RefreshPlaylistsResponse>
 ): Promise<void> {
   const token = await getAccessToken();
 
@@ -139,8 +165,13 @@ export async function refreshAlbums(
 }
 
 export async function getAlbumTracks(
-  req: Request,
-  res: Response
+  req: Request<
+    GetAlbumTracksParams,
+    AlbumTracksResponse,
+    object,
+    GetAlbumTracksQuery
+  >,
+  res: Response<AlbumTracksResponse>
 ): Promise<void> {
   const { albumId } = req.params;
   const limit = Number(req.query.limit ?? 100);
@@ -186,8 +217,13 @@ export async function getAlbumTracks(
 }
 
 export async function refreshAlbumTracks(
-  req: Request,
-  res: Response
+  req: Request<
+    RefreshAlbumTracksParams,
+    ClassifyResultCount,
+    RefreshAlbumTracksBody,
+    object
+  >,
+  res: Response<ClassifyResultCount>
 ): Promise<void> {
   const { albumId } = req.params;
   const { force = false } = req.body as {
