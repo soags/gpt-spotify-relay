@@ -20,8 +20,3 @@ export const SPOTIFY_COLLECTIONS = {
   PLAYLIST_TRACKS: "playlistTracks",
   PLAYLIST_TRACKS__TRACKS: "tracks",
 } as const;
-
-export const CONTEXT_COLLECTIONS = {
-  CONTEXT: "context",
-  CONTEXT__RECORDS: "records",
-} as const;

@@ -5,7 +5,7 @@ import express from "express";
 import { spotifyRouter } from "./routes/spotifyRouter";
 import { auth } from "./middleware/auth";
 import { errorHandler } from "./middleware/errorHandler";
-import { contextRouter } from "./routes/contextRouter";
+import { vaultRouter } from "./routes/vaultRouter";
 
 const app = express();
 
@@ -17,7 +17,7 @@ app.use("/health", (req, res) => res.json({ status: "ok" }));
 
 app.use("/spotify", spotifyRouter);
 
-app.use("/context", contextRouter);
+app.use("/vault", vaultRouter);
 
 app.use(errorHandler);
 
