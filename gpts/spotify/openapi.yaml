@@ -13,6 +13,23 @@ security:
   - ApiKeyAuth: []
 
 paths:
+  /health:
+    get:
+      operationId: healthCheck
+      summary: 健康状態を確認
+      responses:
+        "200":
+          description: 健康状態
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok, error]
+                  message:
+                    type: string
   /tracks:
     get:
       operationId: getSavedTracks

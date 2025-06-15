@@ -10,6 +10,8 @@ import * as analysisContoller from "../controllers/analysisContoller";
 
 export const spotifyRouter = Router();
 
+spotifyRouter.get("/health", (req, res) => res.json({ status: "ok" }));
+
 spotifyRouter.get("/tracks", tracksController.getTracks);
 spotifyRouter.post("/tracks/refresh", tracksController.refreshTracks);
 
@@ -32,5 +34,11 @@ spotifyRouter.post(
 
 spotifyRouter.get("/albums", albumsController.getAlbums);
 spotifyRouter.post("/albums/refresh", albumsController.refreshAlbums);
+
+spotifyRouter.get("/albums/:albumId", albumsController.getAlbumTracks);
+spotifyRouter.post(
+  "/albums/:albumId/refresh",
+  albumsController.refreshAlbumTracks
+);
 
 spotifyRouter.get("/analysis/genres", analysisContoller.getGenreAnalysis);
