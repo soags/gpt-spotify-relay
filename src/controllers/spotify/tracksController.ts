@@ -1,24 +1,24 @@
 // src/controllers/tracksController.ts
 
 import { Request, Response } from "express";
+import { FieldPath } from "firebase-admin/firestore";
+import { db, SPOTIFY_COLLECTIONS } from "../../lib/firestore";
 import {
   getAccessToken,
-  getSeveralArtists,
   getUsersSavedTracks,
-} from "../lib/spotify";
-import { SavedTrack } from "../types/spotify/tracks";
-import { classifyItems, toCountResponse } from "../services/classifyItems";
-import { COLLECTIONS, db } from "../lib/firestore";
-import { Artist } from "../types/spotify/artists";
-import { FieldPath } from "firebase-admin/firestore";
+  getSeveralArtists,
+} from "../../lib/spotify";
+import { classifyItems, toCountResponse } from "../../services/classifyItems";
+import { Artist } from "../../types/spotify/artists";
+import { SavedTrack } from "../../types/spotify/tracks";
 
-export const getTracks = async (req: Request, res: Response) => {
+export async function getTracks(req: Request, res: Response): Promise<void> {
   const limit = Number(req.query.limit ?? 100);
   const cursorId = req.query.cursorId as string | undefined;
   const cursorAddedAt = req.query.cursorAddedAt as string | undefined;
 
   let query = db
-    .collection(COLLECTIONS.SAVED_TRACKS)
+    .collection(SPOTIFY_COLLECTIONS.SAVED_TRACKS)
     .orderBy("addedAt")
     .orderBy(FieldPath.documentId())
     .limit(limit);
@@ -28,31 +28,39 @@ export const getTracks = async (req: Request, res: Response) => {
   }
 
   const snapshot = await query.get();
-  const tracks = snapshot.docs.map((doc) => doc.data() as SavedTrack);
+  const tracks = snapshot.docs.map(
+    (doc) => ({ ...doc.data(), id: doc.id } as SavedTrack)
+  );
 
   // 次ページ用のカーソル
   const last = tracks[tracks.length - 1];
   const nextCursor = last ? { id: last.id, addedAt: last.addedAt } : undefined;
 
   // 総数
-  const totalSnap = await db.collection(COLLECTIONS.SAVED_TRACKS).count().get();
+  const totalSnap = await db
+    .collection(SPOTIFY_COLLECTIONS.SAVED_TRACKS)
+    .count()
+    .get();
   const total = totalSnap.data().count;
 
-  return res.json({
+  res.json({
     tracks,
     cursor: nextCursor,
     total,
   });
-};
+}
 
-export async function refreshTracks(req: Request, res: Response) {
+export async function refreshTracks(
+  req: Request,
+  res: Response
+): Promise<void> {
   const token = await getAccessToken();
 
   const { force = false } = req.body as {
     force?: boolean;
   };
 
-  const col = db.collection(COLLECTIONS.SAVED_TRACKS);
+  const col = db.collection(SPOTIFY_COLLECTIONS.SAVED_TRACKS);
 
   const apiTracks = await getUsersSavedTracks(token);
   const apiItems: SavedTrack[] = apiTracks.map((t) => ({
@@ -104,7 +112,7 @@ export async function refreshTracks(req: Request, res: Response) {
   ]);
 
   // アーティストのキャッシュを全件取得
-  const aCol = db.collection(COLLECTIONS.ARTISTS);
+  const aCol = db.collection(SPOTIFY_COLLECTIONS.ARTISTS);
   const aSnapshot = await aCol.get();
   const cachedArtists: Record<string, Artist> = {};
   aSnapshot.docs.forEach((doc) => {
@@ -140,7 +148,7 @@ export async function refreshTracks(req: Request, res: Response) {
   console.log(`Saving ${artists.length} new artists to Firestore`);
   await Promise.all(artists.map((artist) => aCol.doc(artist.id).set(artist)));
 
-  return res.json({
+  res.json({
     ...toCountResponse(result),
     artists: {
       created: artists.length,

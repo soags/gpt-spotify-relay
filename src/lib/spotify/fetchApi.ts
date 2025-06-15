@@ -1,6 +1,6 @@
 // src/lib/spotify/fetchApi.ts
 
-export const fetchApi = async <T>(url: URL, token: string) => {
+export async function fetchApi<T>(url: URL, token: string): Promise<T> {
   console.log(`Fetching Spotify API: ${url.toString()}`);
   const response = await fetch(url.toString(), {
     headers: {
@@ -18,7 +18,7 @@ export const fetchApi = async <T>(url: URL, token: string) => {
   }
 
   return (await response.json()) as T;
-};
+}
 
 export async function fetchAllPaginated<T, R>({
   getUrl,

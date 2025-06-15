@@ -3,7 +3,9 @@
 import { SPOTIFY_API_BASE_URL } from "./constants";
 import { fetchApi } from "./fetchApi";
 
-export const getFollowedArtists = async (token: string) => {
+export async function getFollowedArtists(
+  token: string
+): Promise<SpotifyApi.ArtistObjectFull[]> {
   const artists = [];
   let after: string | undefined = undefined;
 
@@ -32,4 +34,4 @@ export const getFollowedArtists = async (token: string) => {
   }
 
   return artists;
-};
+}

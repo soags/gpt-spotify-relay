@@ -12,7 +12,7 @@ import { Album, AlbumTrack } from "../../types/spotify/albums";
 import { ValidationError } from "../../types/error";
 import { FieldPath } from "firebase-admin/firestore";
 
-export const getAlbums = async (req: Request, res: Response) => {
+export async function getAlbums(req: Request, res: Response): Promise<void> {
   const rawIds = req.query.ids as string | undefined;
   const ids = rawIds?.trim() ? rawIds.split(",").filter(Boolean) : [];
   const limit = Number(req.query.limit ?? 100);
@@ -24,7 +24,7 @@ export const getAlbums = async (req: Request, res: Response) => {
     // ids指定時はidsのアルバムを全件取得、ページネーション・limit無視
     const docs = await Promise.all(ids.map((id) => col.doc(id).get()));
     const albums = docs.filter((doc) => doc.exists).map((doc) => doc.data());
-    return res.json(albums);
+    res.json(albums);
   } else {
     // ページネーション
     let query = col.orderBy(FieldPath.documentId()).limit(limit);
@@ -32,22 +32,27 @@ export const getAlbums = async (req: Request, res: Response) => {
       query = query.startAfter(cursorId);
     }
     const snapshot = await query.get();
-    const albums = snapshot.docs.map((doc) => doc.data() as Album);
+    const albums = snapshot.docs.map(
+      (doc) => ({ ...doc.data(), id: doc.id } as Album)
+    );
     // 次ページ用のカーソル
     const last = albums[albums.length - 1];
     const nextCursor = last ? { id: last.id } : undefined;
     // 総数
     const totalSnap = await col.count().get();
     const total = totalSnap.data().count;
-    return res.json({
+    res.json({
       albums,
       cursor: nextCursor,
       total,
     });
   }
-};
+}
 
-export const refreshAlbums = async (req: Request, res: Response) => {
+export async function refreshAlbums(
+  req: Request,
+  res: Response
+): Promise<void> {
   const token = await getAccessToken();
 
   const { albumIds, force = false } = req.body as {
@@ -72,7 +77,7 @@ export const refreshAlbums = async (req: Request, res: Response) => {
   const albums = [];
   for (let i = 0; i < toFetch.length; i += 20) {
     const ids = toFetch.slice(i, i + 20);
-    const result = await getSeveralAlbums(ids, token);
+    const result = await getSeveralAlbums({ ids, token });
     albums.push(...result);
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
@@ -130,10 +135,13 @@ export const refreshAlbums = async (req: Request, res: Response) => {
     tracks: tracksResults,
   };
 
-  return res.json(result);
-};
+  res.json(result);
+}
 
-export const getAlbumTracks = async (req: Request, res: Response) => {
+export async function getAlbumTracks(
+  req: Request,
+  res: Response
+): Promise<void> {
   const { albumId } = req.params;
   const limit = Number(req.query.limit ?? 100);
   const cursorId = req.query.cursorId as string | undefined;
@@ -153,7 +161,9 @@ export const getAlbumTracks = async (req: Request, res: Response) => {
   }
 
   const snapshot = await query.get();
-  const tracks = snapshot.docs.map((doc) => doc.data() as AlbumTrack);
+  const tracks = snapshot.docs.map(
+    (doc) => ({ ...doc.data(), id: doc.id } as AlbumTrack)
+  );
 
   // 次ページ用のカーソル
   const last = tracks[tracks.length - 1];
@@ -168,14 +178,17 @@ export const getAlbumTracks = async (req: Request, res: Response) => {
     .get();
   const total = totalSnap.data().count;
 
-  return res.json({
+  res.json({
     tracks,
     cursor: nextCursor,
     total,
   });
-};
+}
 
-export const refreshAlbumTracks = async (req: Request, res: Response) => {
+export async function refreshAlbumTracks(
+  req: Request,
+  res: Response
+): Promise<void> {
   const { albumId } = req.params;
   const { force = false } = req.body as {
     force?: boolean;
@@ -189,8 +202,8 @@ export const refreshAlbumTracks = async (req: Request, res: Response) => {
 
   const result = await refreshAlbumTracksCore(albumId, force, token);
 
-  return res.json(result);
-};
+  res.json(result);
+}
 
 const refreshAlbumTracksCore = async (
   albumId: string,

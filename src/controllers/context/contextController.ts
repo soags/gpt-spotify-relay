@@ -1,37 +1,63 @@
 // src/controllers/context/contextController.ts
 
 import { Request, Response } from "express";
-import { ContextRecord } from "../../types/context";
+import { ContextRecord, ContextRecordSimplified } from "../../types/context";
 import { CONTEXT_COLLECTIONS, db } from "../../lib/firestore";
 import { NotFoundError, ValidationError } from "../../types/error";
 import slugify from "slugify";
 
 const userId = "defaultUser";
 
-export const listContexts = async (req: Request, res: Response) => {
+type SaveContextResponse = {
+  contextId: string;
+};
+
+type SaveContextBatchResponse = {
+  count: number;
+  contextIds: string[];
+};
+
+export async function listContexts(req: Request, res: Response): Promise<void> {
   const keywordFilter = req.query.keywords as string | undefined;
   const limit = Number(req.query.limit) || 20;
+  const cursorId = req.query.cursorId as string | undefined;
 
   let query = db
     .collection(CONTEXT_COLLECTIONS.CONTEXT)
     .doc(userId)
     .collection(CONTEXT_COLLECTIONS.CONTEXT__RECORDS)
-    .orderBy("updatedAt", "desc");
+    .orderBy("updatedAt", "desc")
+    .limit(limit);
 
   if (keywordFilter) {
     query = query.where("keywords", "array-contains", keywordFilter);
   }
+  if (cursorId) {
+    query = query.startAfter(cursorId);
+  }
 
-  const snapshot = await query.limit(limit).get();
-  const data = snapshot.docs.map((doc) => {
-    const { contextId, summary, keywords, createdAt, updatedAt } = doc.data();
-    return { contextId, summary, keywords, createdAt, updatedAt };
+  const snapshot = await query.get();
+  const contexts = snapshot.docs.map((doc) => {
+    const data = doc.data() as ContextRecord;
+    return {
+      contextId: doc.id,
+      summary: data.summary,
+      keywords: data.keywords,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+    } as ContextRecordSimplified;
   });
 
-  res.json({ contexts: data });
-};
+  const last = contexts[contexts.length - 1];
+  const nextCursor = last ? { id: last.contextId } : undefined;
 
-export const getContext = async (req: Request, res: Response) => {
+  res.json({
+    contexts,
+    cursor: nextCursor,
+  });
+}
+
+export async function getContext(req: Request, res: Response): Promise<void> {
   const contextId = req.params.id;
 
   if (!contextId) {
@@ -52,16 +78,47 @@ export const getContext = async (req: Request, res: Response) => {
 
   const context = snapshot.data() as ContextRecord;
   res.json(context);
-};
+}
 
-export const saveContext = async (req: Request, res: Response) => {
+export async function saveContext(req: Request, res: Response): Promise<void> {
+  const payload = req.body as ContextRecord;
+  if (!payload) {
+    throw new ValidationError("Payload is required.");
+  }
+  if (Array.isArray(payload)) {
+    throw new ValidationError("Payload must be a single context record.");
+  }
+
+  const context: ContextRecord = payload;
+
+  const result = await saveContextBatchCore([context]);
+
+  res.json({
+    contextId: result.contextIds[0],
+  } as SaveContextResponse);
+}
+
+export async function saveContextBatch(
+  req: Request,
+  res: Response
+): Promise<void> {
   const payload = req.body;
 
-  // 単数 or 複数に対応
-  const contexts: ContextRecord[] = Array.isArray(payload)
-    ? payload
-    : [payload];
+  if (!payload) {
+    throw new ValidationError("Payload is required.");
+  }
+  if (!Array.isArray(payload)) {
+    throw new ValidationError("Payload must be an array.");
+  }
 
+  const contexts: ContextRecord[] = payload;
+
+  res.json(await saveContextBatchCore(contexts));
+}
+
+export async function saveContextBatchCore(
+  contexts: ContextRecord[]
+): Promise<SaveContextBatchResponse> {
   const batch = db.batch();
   const now = new Date();
 
@@ -102,10 +159,14 @@ export const saveContext = async (req: Request, res: Response) => {
   }
 
   await batch.commit();
-  res.json({ ok: true, count: contexts.length, contextIds });
-};
 
-export const deleteContext = async (req: Request, res: Response) => {
+  return { count: contexts.length, contextIds };
+}
+
+export async function deleteContext(
+  req: Request,
+  res: Response
+): Promise<void> {
   const contextId = req.params.id;
   if (!contextId) throw new ValidationError("Missing contextId");
 
@@ -123,9 +184,9 @@ export const deleteContext = async (req: Request, res: Response) => {
 
   await ref.delete();
   res.json({ ok: true });
-};
+}
 
-const generateContextId = async (summary: string): Promise<string> => {
+async function generateContextId(summary: string): Promise<string> {
   const base = `${slugify(summary, {
     lower: true,
     strict: true,
@@ -138,12 +199,12 @@ const generateContextId = async (summary: string): Promise<string> => {
     id = `${base}-${suffix++}`;
   }
   return id;
-};
+}
 
-const getTimestampString = () => {
+function getTimestampString(): string {
   const now = new Date();
   const pad = (n: number) => n.toString().padStart(2, "0");
   return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(
     now.getDate()
   )}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-};
+}

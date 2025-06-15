@@ -1,13 +1,13 @@
 // src/services/classifyItems.ts
 
-type ClassifyResult<T> = {
+export type ClassifyResult<T> = {
   createItems: T[];
   refreshItems: T[];
   skipItems: T[];
   deletedIds: string[];
 };
 
-type ClassifyResultCount = {
+export type ClassifyResultCount = {
   created: number;
   refreshed: number;
   skipped: number;

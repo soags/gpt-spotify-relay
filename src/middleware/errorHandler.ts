@@ -18,7 +18,7 @@ export function errorHandler(
   req: Request,
   res: Response,
   _next: NextFunction
-) {
+): void {
   console.error("Error occurred:", err);
 
   let statusCode = 500;

@@ -11,3 +11,5 @@ contextRouter.get("/", contextController.listContexts);
 contextRouter.get("/:id", contextController.getContext);
 contextRouter.post("/", contextController.saveContext);
 contextRouter.delete("/:id", contextController.deleteContext);
+
+contextRouter.post("/batch", contextController.saveContextBatch);

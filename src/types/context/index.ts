@@ -9,6 +9,8 @@ export type ContextRecord = {
   updatedAt: FirebaseFirestore.Timestamp;
 };
 
+export type ContextRecordSimplified = Omit<ContextRecord, "sections">;
+
 export type Section = {
   role: "user" | "assistant";
   text: string;

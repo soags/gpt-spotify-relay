@@ -3,16 +3,25 @@
 import { SPOTIFY_API_BASE_URL } from "./constants";
 import { fetchApi, fetchAllPaginated } from "./fetchApi";
 
-export const getSeveralAlbums = async (ids: string[], token: string) => {
+export async function getSeveralAlbums({
+  ids,
+  token,
+}: {
+  ids: string[];
+  token: string;
+}) {
   const url = new URL(`${SPOTIFY_API_BASE_URL}/albums`);
   url.searchParams.append("ids", ids.join(","));
 
   const res = await fetchApi<SpotifyApi.MultipleAlbumsResponse>(url, token);
 
   return res.albums;
-};
+}
 
-export const getAlbumTracks = async (albumId: string, token: string) => {
+export async function getAlbumTracks(
+  albumId: string,
+  token: string
+): Promise<SpotifyApi.TrackObjectSimplified[]> {
   return await fetchAllPaginated<
     SpotifyApi.TrackObjectSimplified,
     SpotifyApi.AlbumTracksResponse
@@ -28,4 +37,4 @@ export const getAlbumTracks = async (albumId: string, token: string) => {
     extractNext: (res, _page, offset) => offset < res.total,
     token,
   });
-};
+}

@@ -3,7 +3,9 @@
 import { SPOTIFY_API_BASE_URL } from "./constants";
 import { fetchAllPaginated } from "./fetchApi";
 
-export const getUserPlaylists = async (token: string) => {
+export async function getUserPlaylists(
+  token: string
+): Promise<SpotifyApi.PlaylistObjectSimplified[]> {
   return await fetchAllPaginated<
     SpotifyApi.PlaylistObjectSimplified,
     SpotifyApi.ListOfCurrentUsersPlaylistsResponse
@@ -19,9 +21,12 @@ export const getUserPlaylists = async (token: string) => {
     extractNext: (res, _page, offset) => offset < res.total,
     token,
   });
-};
+}
 
-export const getPlaylistItems = async (playlistId: string, token: string) => {
+export async function getPlaylistItems(
+  playlistId: string,
+  token: string
+): Promise<SpotifyApi.PlaylistTrackObject[]> {
   return await fetchAllPaginated<
     SpotifyApi.PlaylistTrackObject,
     SpotifyApi.PlaylistTrackResponse
@@ -39,4 +44,4 @@ export const getPlaylistItems = async (playlistId: string, token: string) => {
     extractNext: (res, _page, offset) => offset < res.total,
     token,
   });
-};
+}

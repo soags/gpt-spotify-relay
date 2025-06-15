@@ -1,17 +1,21 @@
 import { Request, Response } from "express";
-import { COLLECTIONS, db } from "../lib/firestore";
+import { db, SPOTIFY_COLLECTIONS } from "../../lib/firestore";
 
-export const getGenreAnalysis = async (req: Request, res: Response) => {
-  const col = db.collection(COLLECTIONS.ARTISTS);
+export async function getGenreAnalysis(
+  req: Request,
+  res: Response
+): Promise<void> {
+  const col = db.collection(SPOTIFY_COLLECTIONS.ARTISTS);
   const snapshot = await col.get();
 
   if (snapshot.empty) {
-    return res.json({
+    res.json({
       genres: [],
       total: 0,
       message:
         "アーティストデータが保存されていません（/artists/refresh を実行してください）",
     });
+    return;
   }
 
   const genreMap: Record<string, number> = {};
@@ -33,4 +37,4 @@ export const getGenreAnalysis = async (req: Request, res: Response) => {
     genres: sortedGenres,
     total: sortedGenres.reduce((acc, g) => acc + g.count, 0),
   });
-};
+}

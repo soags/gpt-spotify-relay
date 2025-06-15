@@ -3,7 +3,9 @@
 import { SPOTIFY_API_BASE_URL } from "./constants";
 import { fetchAllPaginated } from "./fetchApi";
 
-export const getUsersSavedTracks = async (token: string) => {
+export async function getUsersSavedTracks(
+  token: string
+): Promise<SpotifyApi.SavedTrackObject[]> {
   return await fetchAllPaginated<
     SpotifyApi.SavedTrackObject,
     SpotifyApi.UsersSavedTracksResponse
@@ -19,4 +21,4 @@ export const getUsersSavedTracks = async (token: string) => {
     extractNext: (res, _page, offset) => offset < res.total,
     token,
   });
-};
+}

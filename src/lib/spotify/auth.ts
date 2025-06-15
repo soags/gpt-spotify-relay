@@ -7,7 +7,7 @@ import {
   SPOTIFY_REFRESH_TOKEN,
 } from "./constants";
 
-export const getAccessToken = async (): Promise<string> => {
+export async function getAccessToken(): Promise<string> {
   const response = await fetch("https://accounts.spotify.com/api/token", {
     method: "POST",
     headers: {
@@ -33,4 +33,4 @@ export const getAccessToken = async (): Promise<string> => {
 
   const data = await response.json();
   return data.access_token;
-};
+}

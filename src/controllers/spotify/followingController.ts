@@ -1,19 +1,19 @@
 // src/controllers/tracksController.ts
 
 import { Request, Response } from "express";
-import { getAccessToken, getFollowedArtists } from "../lib/spotify";
-import { COLLECTIONS, db } from "../lib/firestore";
-import { FollowingArtist } from "../types/spotify/artists";
-import { classifyItems, toCountResponse } from "../services/classifyItems";
 import { FieldPath } from "firebase-admin/firestore";
+import { db, SPOTIFY_COLLECTIONS } from "../../lib/firestore";
+import { getAccessToken, getFollowedArtists } from "../../lib/spotify";
+import { classifyItems, toCountResponse } from "../../services/classifyItems";
+import { FollowingArtist } from "../../types/spotify/artists";
 
-export const getFollowing = async (req: Request, res: Response) => {
+export async function getFollowing(req: Request, res: Response): Promise<void> {
   const limit = Number(req.query.limit ?? 100);
   const cursorId = req.query.cursorId as string | undefined;
   const cursorFollowedAt = req.query.cursorFollowedAt as string | undefined;
 
   let query = db
-    .collection(COLLECTIONS.FOLLOWING_ARTISTS)
+    .collection(SPOTIFY_COLLECTIONS.FOLLOWING_ARTISTS)
     .orderBy("followedAt")
     .orderBy(FieldPath.documentId())
     .limit(limit);
@@ -23,7 +23,9 @@ export const getFollowing = async (req: Request, res: Response) => {
   }
 
   const snapshot = await query.get();
-  const artists = snapshot.docs.map((doc) => doc.data() as FollowingArtist);
+  const artists = snapshot.docs.map(
+    (doc) => ({ ...doc.data(), id: doc.id } as FollowingArtist)
+  );
 
   // 次ページ用のカーソル
   const last = artists[artists.length - 1];
@@ -33,26 +35,29 @@ export const getFollowing = async (req: Request, res: Response) => {
 
   // 総数
   const totalSnap = await db
-    .collection(COLLECTIONS.FOLLOWING_ARTISTS)
+    .collection(SPOTIFY_COLLECTIONS.FOLLOWING_ARTISTS)
     .count()
     .get();
   const total = totalSnap.data().count;
 
-  return res.json({
+  res.json({
     artists,
     cursor: nextCursor,
     total,
   });
-};
+}
 
-export const refreshFollowing = async (req: Request, res: Response) => {
+export async function refreshFollowing(
+  req: Request,
+  res: Response
+): Promise<void> {
   const token = await getAccessToken();
 
   const { force = false } = req.body as {
     force?: boolean;
   };
 
-  const col = db.collection(COLLECTIONS.FOLLOWING_ARTISTS);
+  const col = db.collection(SPOTIFY_COLLECTIONS.FOLLOWING_ARTISTS);
   const followedAt = new Date().toISOString();
 
   const apiArtists = await getFollowedArtists(token);
@@ -88,5 +93,5 @@ export const refreshFollowing = async (req: Request, res: Response) => {
     ...result.deletedIds.map((id) => col.doc(id).delete()),
   ]);
 
-  return res.json(toCountResponse(result));
-};
+  res.json(toCountResponse(result));
+}

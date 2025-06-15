@@ -1,26 +1,29 @@
 // src/controllers/artistsController.ts
 
 import { Request, Response } from "express";
-import { getAccessToken, getSeveralArtists } from "../lib/spotify";
-import { COLLECTIONS, db } from "../lib/firestore";
-import { ValidationError } from "../types/error";
-import { Artist } from "../types/spotify/artists";
-import { classifyItems, toCountResponse } from "../services/classifyItems";
-import { FieldPath } from "firebase-admin/firestore";
 
-export const getArtists = async (req: Request, res: Response) => {
+import { FieldPath } from "firebase-admin/firestore";
+import { db, SPOTIFY_COLLECTIONS } from "../../lib/firestore";
+import { getAccessToken, getSeveralArtists } from "../../lib/spotify";
+import { classifyItems, toCountResponse } from "../../services/classifyItems";
+import { ValidationError } from "../../types/error";
+import { Artist } from "../../types/spotify/artists";
+
+export async function getArtists(req: Request, res: Response): Promise<void> {
   const rawIds = req.query.ids as string | undefined;
   const ids = rawIds?.trim() ? rawIds.split(",").filter(Boolean) : [];
   const limit = Number(req.query.limit ?? 100);
   const cursorId = req.query.cursorId as string | undefined;
 
-  const col = db.collection(COLLECTIONS.ARTISTS);
+  const col = db.collection(SPOTIFY_COLLECTIONS.ARTISTS);
 
   if (ids.length > 0) {
     // ids指定時はidsのアーティストを全件取得、ページネーション・limit無視
     const docs = await Promise.all(ids.map((id) => col.doc(id).get()));
-    const artists = docs.filter((doc) => doc.exists).map((doc) => doc.data());
-    return res.json(artists);
+    const artists = docs
+      .filter((doc) => doc.exists)
+      .map((doc) => ({ ...doc.data(), id: doc.id } as Artist));
+    res.json(artists);
   } else {
     // ページネーション
     let query = col.orderBy(FieldPath.documentId()).limit(limit);
@@ -28,22 +31,27 @@ export const getArtists = async (req: Request, res: Response) => {
       query = query.startAfter(cursorId);
     }
     const snapshot = await query.get();
-    const artists = snapshot.docs.map((doc) => doc.data() as Artist);
+    const artists = snapshot.docs.map(
+      (doc) => ({ ...doc.data(), id: doc.id } as Artist)
+    );
     // 次ページ用のカーソル
     const last = artists[artists.length - 1];
     const nextCursor = last ? { id: last.id } : undefined;
     // 総数
     const totalSnap = await col.count().get();
     const total = totalSnap.data().count;
-    return res.json({
+    res.json({
       artists,
       cursor: nextCursor,
       total,
     });
   }
-};
+}
 
-export async function refreshArtists(req: Request, res: Response) {
+export async function refreshArtists(
+  req: Request,
+  res: Response
+): Promise<void> {
   const token = await getAccessToken();
 
   const { artistIds, force = false } = req.body as {
@@ -55,7 +63,7 @@ export async function refreshArtists(req: Request, res: Response) {
     throw new ValidationError("artistIds is required and cannot be empty.");
   }
 
-  const col = db.collection(COLLECTIONS.ARTISTS);
+  const col = db.collection(SPOTIFY_COLLECTIONS.ARTISTS);
 
   const snapshot = await col.get();
   const cached: Record<string, Artist> = {};
@@ -95,5 +103,5 @@ export async function refreshArtists(req: Request, res: Response) {
     ...result.deletedIds.map((id) => col.doc(id).delete()),
   ]);
 
-  return res.json(toCountResponse(result));
+  res.json(toCountResponse(result));
 }

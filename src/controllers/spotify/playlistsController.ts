@@ -1,52 +1,64 @@
 // src/controllers/playlistsController.ts
 
 import { Request, Response } from "express";
-import { COLLECTIONS, db } from "../lib/firestore";
+import { db, SPOTIFY_COLLECTIONS } from "../../lib/firestore";
 import {
   getAccessToken,
-  getPlaylistItems,
   getUserPlaylists,
-} from "../lib/spotify";
-import { classifyItems, toCountResponse } from "../services/classifyItems";
-import { Playlist, PlaylistTrack } from "../types/spotify/playlist";
-import { ValidationError } from "../types/error";
+  getPlaylistItems,
+} from "../../lib/spotify";
+import {
+  classifyItems,
+  ClassifyResultCount,
+  toCountResponse,
+} from "../../services/classifyItems";
+import { ValidationError } from "../../types/error";
+import { Playlist, PlaylistTrack } from "../../types/spotify/playlist";
 
-export const getPlaylists = async (req: Request, res: Response) => {
+export async function getPlaylists(req: Request, res: Response): Promise<void> {
   const limit = Number(req.query.limit ?? 100);
   const cursorId = req.query.cursorId as string | undefined;
 
-  let query = db.collection(COLLECTIONS.PLAYLISTS).limit(limit);
+  let query = db.collection(SPOTIFY_COLLECTIONS.PLAYLISTS).limit(limit);
 
   if (cursorId) {
     query = query.startAfter(cursorId);
   }
 
   const snapshot = await query.get();
-  const playlists = snapshot.docs.map((doc) => doc.data() as Playlist);
+  const playlists = snapshot.docs.map(
+    (doc) => ({ ...doc.data(), id: doc.id } as Playlist)
+  );
 
   // 次ページ用のカーソル
   const last = playlists[playlists.length - 1];
   const nextCursor = last ? { id: last.id } : undefined;
 
   // 総数
-  const totalSnap = await db.collection(COLLECTIONS.PLAYLISTS).count().get();
+  const totalSnap = await db
+    .collection(SPOTIFY_COLLECTIONS.PLAYLISTS)
+    .count()
+    .get();
   const total = totalSnap.data().count;
 
-  return res.json({
+  res.json({
     playlists,
     cursor: nextCursor,
     total,
   });
-};
+}
 
-export const refreshPlaylists = async (req: Request, res: Response) => {
+export async function refreshPlaylists(
+  req: Request,
+  res: Response
+): Promise<void> {
   const token = await getAccessToken();
 
   const { force = false } = req.body as {
     force?: boolean;
   };
 
-  const col = db.collection(COLLECTIONS.PLAYLISTS);
+  const col = db.collection(SPOTIFY_COLLECTIONS.PLAYLISTS);
 
   const apiPlaylists = await getUserPlaylists(token);
 
@@ -102,7 +114,10 @@ export const refreshPlaylists = async (req: Request, res: Response) => {
   if (deletedPlaylistIds.length > 0) {
     await Promise.all(
       deletedPlaylistIds.map((playlistId) =>
-        db.collection(COLLECTIONS.PLAYLIST_TRACKS).doc(playlistId).delete()
+        db
+          .collection(SPOTIFY_COLLECTIONS.PLAYLIST_TRACKS)
+          .doc(playlistId)
+          .delete()
       )
     );
   }
@@ -112,10 +127,13 @@ export const refreshPlaylists = async (req: Request, res: Response) => {
     tracks: tracksResults,
   };
 
-  return res.json(result);
-};
+  res.json(result);
+}
 
-export const getPlaylistTracks = async (req: Request, res: Response) => {
+export async function getPlaylistTracks(
+  req: Request,
+  res: Response
+): Promise<void> {
   const { playlistId } = req.params;
   const limit = Number(req.query.limit ?? 100);
   const cursorId = req.query.cursorId as string | undefined;
@@ -125,9 +143,9 @@ export const getPlaylistTracks = async (req: Request, res: Response) => {
   }
 
   let query = db
-    .collection(COLLECTIONS.PLAYLIST_TRACKS)
+    .collection(SPOTIFY_COLLECTIONS.PLAYLIST_TRACKS)
     .doc(playlistId)
-    .collection(COLLECTIONS.PLAYLIST_TRACKS__TRACKS)
+    .collection(SPOTIFY_COLLECTIONS.PLAYLIST_TRACKS__TRACKS)
     .limit(limit);
 
   if (cursorId) {
@@ -135,7 +153,9 @@ export const getPlaylistTracks = async (req: Request, res: Response) => {
   }
 
   const snapshot = await query.get();
-  const tracks = snapshot.docs.map((doc) => doc.data() as PlaylistTrack);
+  const tracks = snapshot.docs.map(
+    (doc) => ({ ...doc.data(), id: doc.id } as PlaylistTrack)
+  );
 
   // 次ページ用のカーソル
   const last = tracks[tracks.length - 1];
@@ -143,21 +163,24 @@ export const getPlaylistTracks = async (req: Request, res: Response) => {
 
   // 総数
   const totalSnap = await db
-    .collection(COLLECTIONS.PLAYLIST_TRACKS)
+    .collection(SPOTIFY_COLLECTIONS.PLAYLIST_TRACKS)
     .doc(playlistId)
-    .collection(COLLECTIONS.PLAYLIST_TRACKS__TRACKS)
+    .collection(SPOTIFY_COLLECTIONS.PLAYLIST_TRACKS__TRACKS)
     .count()
     .get();
   const total = totalSnap.data().count;
 
-  return res.json({
+  res.json({
     tracks,
     cursor: nextCursor,
     total,
   });
-};
+}
 
-export const refreshPlaylistTracks = async (req: Request, res: Response) => {
+export async function refreshPlaylistTracks(
+  req: Request,
+  res: Response
+): Promise<void> {
   const { playlistId } = req.params;
   const { force = false } = req.body as {
     force?: boolean;
@@ -171,18 +194,18 @@ export const refreshPlaylistTracks = async (req: Request, res: Response) => {
 
   const result = await refreshPlaylistTracksCore(playlistId, force, token);
 
-  return res.json(result);
-};
+  res.json(result);
+}
 
-const refreshPlaylistTracksCore = async (
+async function refreshPlaylistTracksCore(
   playlistId: string,
   force: boolean,
   token: string
-) => {
+): Promise<ClassifyResultCount> {
   const col = db
-    .collection(COLLECTIONS.PLAYLIST_TRACKS)
+    .collection(SPOTIFY_COLLECTIONS.PLAYLIST_TRACKS)
     .doc(playlistId)
-    .collection(COLLECTIONS.PLAYLIST_TRACKS__TRACKS);
+    .collection(SPOTIFY_COLLECTIONS.PLAYLIST_TRACKS__TRACKS);
 
   const apiTracks = await getPlaylistItems(playlistId, token);
 
@@ -234,4 +257,4 @@ const refreshPlaylistTracksCore = async (
   ]);
 
   return toCountResponse(result);
-};
+}
