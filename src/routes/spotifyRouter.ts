@@ -1,12 +1,12 @@
 // src/routes/index.ts
 
 import { Router } from "express";
-import * as tracksController from "../controllers/tracksController";
-import * as artistsController from "../controllers/artistsController";
-import * as followingController from "../controllers/followingController";
-import * as playlistsController from "../controllers/playlistsController";
-import * as albumsController from "../controllers/albumsController";
-import * as analysisContoller from "../controllers/analysisContoller";
+import * as tracksController from "../controllers/spotify/tracksController";
+import * as artistsController from "../controllers/spotify/artistsController";
+import * as followingController from "../controllers/spotify/followingController";
+import * as playlistsController from "../controllers/spotify/playlistsController";
+import * as albumsController from "../controllers/spotify/albumsController";
+import * as analysisContoller from "../controllers/spotify/analysisContoller";
 
 export const spotifyRouter = Router();
 

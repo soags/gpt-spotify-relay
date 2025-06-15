@@ -1,15 +1,15 @@
 // src/controllers/albumsController.ts
 
 import { Request, Response } from "express";
-import { COLLECTIONS, db } from "../lib/firestore";
-import { classifyItems, toCountResponse } from "../services/classifyItems";
+import { COLLECTIONS, db } from "../../lib/firestore";
+import { classifyItems, toCountResponse } from "../../services/classifyItems";
 import {
   getAccessToken,
   getSeveralAlbums,
   getAlbumTracks as getAlbumTracksApi,
-} from "../lib/spotify";
-import { Album, AlbumTrack } from "../types/spotify/albums";
-import { ValidationError } from "../types/error";
+} from "../../lib/spotify";
+import { Album, AlbumTrack } from "../../types/spotify/albums";
+import { ValidationError } from "../../types/error";
 import { FieldPath } from "firebase-admin/firestore";
 
 export const getAlbums = async (req: Request, res: Response) => {
