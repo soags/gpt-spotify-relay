@@ -8,7 +8,7 @@ import {
   getUserPlaylists,
 } from "../lib/spotify";
 import { classifyItems, toCountResponse } from "../services/classifyItems";
-import { Playlist, PlaylistTrack } from "../types/playlist";
+import { Playlist, PlaylistTrack } from "../types/spotify/playlist";
 import { ValidationError } from "../types/error";
 
 export const getPlaylists = async (req: Request, res: Response) => {

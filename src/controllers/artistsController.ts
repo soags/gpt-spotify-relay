@@ -4,7 +4,7 @@ import { Request, Response } from "express";
 import { getAccessToken, getSeveralArtists } from "../lib/spotify";
 import { COLLECTIONS, db } from "../lib/firestore";
 import { ValidationError } from "../types/error";
-import { Artist } from "../types/artists";
+import { Artist } from "../types/spotify/artists";
 import { classifyItems, toCountResponse } from "../services/classifyItems";
 import { FieldPath } from "firebase-admin/firestore";
 

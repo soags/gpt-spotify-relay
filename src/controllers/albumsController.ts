@@ -8,7 +8,7 @@ import {
   getSeveralAlbums,
   getAlbumTracks as getAlbumTracksApi,
 } from "../lib/spotify";
-import { Album, AlbumTrack } from "../types/albums";
+import { Album, AlbumTrack } from "../types/spotify/albums";
 import { ValidationError } from "../types/error";
 import { FieldPath } from "firebase-admin/firestore";
 

@@ -3,7 +3,7 @@
 import { Request, Response } from "express";
 import { getAccessToken, getFollowedArtists } from "../lib/spotify";
 import { COLLECTIONS, db } from "../lib/firestore";
-import { FollowingArtist } from "../types/artists";
+import { FollowingArtist } from "../types/spotify/artists";
 import { classifyItems, toCountResponse } from "../services/classifyItems";
 import { FieldPath } from "firebase-admin/firestore";
 

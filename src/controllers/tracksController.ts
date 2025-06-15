@@ -6,10 +6,10 @@ import {
   getSeveralArtists,
   getUsersSavedTracks,
 } from "../lib/spotify";
-import { SavedTrack } from "../types/tracks";
+import { SavedTrack } from "../types/spotify/tracks";
 import { classifyItems, toCountResponse } from "../services/classifyItems";
 import { COLLECTIONS, db } from "../lib/firestore";
-import { Artist } from "../types/artists";
+import { Artist } from "../types/spotify/artists";
 import { FieldPath } from "firebase-admin/firestore";
 
 export const getTracks = async (req: Request, res: Response) => {
