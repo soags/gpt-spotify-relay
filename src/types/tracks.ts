@@ -13,5 +13,8 @@ export type Track = {
   duration_ms: number;
   explicit: boolean;
   popularity: number;
+};
+
+export type SavedTrack = Track & {
   addedAt: string;
 };

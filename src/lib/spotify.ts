@@ -21,9 +21,29 @@ export const getUserPlaylists = async (token: string) => {
     SpotifyApi.PlaylistObjectSimplified,
     SpotifyApi.ListOfCurrentUsersPlaylistsResponse
   >({
-    getUrl: (_page, offset) => {
+    getUrl: (_page, limit, offset) => {
       const url = new URL(`${SPOTIFY_API_BASE_URL}/me/playlists`);
-      const searchParams = new URLSearchParams({ limit: "50" });
+      const searchParams = new URLSearchParams({ limit: String(limit) });
+      if (offset > 0) searchParams.append("offset", String(offset));
+      url.search = searchParams.toString();
+      return url;
+    },
+    extractItems: (res) => res.items,
+    extractNext: (res, _page, offset) => offset < res.total,
+    token,
+  });
+};
+
+export const getPlaylistItems = async (playlistId: string, token: string) => {
+  return await fetchAllPaginated<
+    SpotifyApi.PlaylistTrackObject,
+    SpotifyApi.PlaylistTrackResponse
+  >({
+    getUrl: (_page, limit, offset) => {
+      const url = new URL(
+        `${SPOTIFY_API_BASE_URL}/playlists/${playlistId}/tracks`
+      );
+      const searchParams = new URLSearchParams({ limit: String(limit) });
       if (offset > 0) searchParams.append("offset", String(offset));
       url.search = searchParams.toString();
       return url;
@@ -48,9 +68,9 @@ export const getUsersSavedTracks = async (token: string) => {
     SpotifyApi.SavedTrackObject,
     SpotifyApi.UsersSavedTracksResponse
   >({
-    getUrl: (_page, offset) => {
+    getUrl: (_page, limit, offset) => {
       const url = new URL(`${SPOTIFY_API_BASE_URL}/me/tracks`);
-      const searchParams = new URLSearchParams({ limit: "50" });
+      const searchParams = new URLSearchParams({ limit: String(limit) });
       if (offset > 0) searchParams.append("offset", String(offset));
       url.search = searchParams.toString();
       return url;
@@ -129,7 +149,7 @@ export async function fetchAllPaginated<T, R>({
   delayMs = 500,
   token,
 }: {
-  getUrl: (page: number, offset: number) => URL;
+  getUrl: (page: number, limit: number, offset: number) => URL;
   extractItems: (res: R) => T[];
   extractNext?: (res: R, page: number, offset: number) => boolean;
   limit?: number;
@@ -141,7 +161,7 @@ export async function fetchAllPaginated<T, R>({
   let page = 0;
   let hasNext = true;
   while (hasNext) {
-    const url = getUrl(page, offset);
+    const url = getUrl(page, limit, offset);
     const res = await fetchApi<R>(url, token);
     const items = extractItems(res);
     all.push(...items);

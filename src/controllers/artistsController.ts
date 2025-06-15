@@ -2,7 +2,7 @@
 
 import { Request, Response } from "express";
 import { getAccessToken, getSeveralArtists } from "../lib/spotify";
-import { db } from "../lib/firestore";
+import { COLLECTIONS, db } from "../lib/firestore";
 import { ValidationError } from "../types/error";
 import { Artist } from "../types/artists";
 import { classifyItems, toCountResponse } from "../services/classifyItems";
@@ -13,7 +13,7 @@ export const getArtists = async (req: Request, res: Response) => {
   const limit = Number(req.query.limit ?? 100);
   const cursorId = req.query.cursorId as string | undefined;
 
-  const col = db.collection("saved_artists");
+  const col = db.collection(COLLECTIONS.ARTISTS);
 
   if (ids.length > 0) {
     // ids指定時はidsのアーティストを全件取得、ページネーション・limit無視
@@ -54,7 +54,7 @@ export async function refreshArtists(req: Request, res: Response) {
     throw new ValidationError("artistIds is required and cannot be empty.");
   }
 
-  const col = db.collection("saved_artists");
+  const col = db.collection(COLLECTIONS.ARTISTS);
 
   const snapshot = await col.get();
   const cached: Record<string, Artist> = {};
@@ -77,6 +77,7 @@ export async function refreshArtists(req: Request, res: Response) {
     name: a.name,
     genres: a.genres,
     popularity: a.popularity,
+    followers: a.followers.total,
   }));
 
   const result = classifyItems({

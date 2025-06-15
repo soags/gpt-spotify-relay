@@ -10,4 +10,5 @@ export type Album = {
   releaseDate: string;
   totalTracks: number;
   albumType: string;
+  popularity: number;
 };

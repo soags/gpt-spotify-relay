@@ -1,7 +1,7 @@
 // src/controllers/albumsController.ts
 
 import { Request, Response } from "express";
-import { db } from "../lib/firestore";
+import { COLLECTIONS, db } from "../lib/firestore";
 import { classifyItems, toCountResponse } from "../services/classifyItems";
 import { getAccessToken, getSeveralAlbums } from "../lib/spotify";
 import { Album } from "../types/albums";
@@ -13,7 +13,7 @@ export const getAlbums = async (req: Request, res: Response) => {
   const limit = Number(req.query.limit ?? 100);
   const cursorId = req.query.cursorId as string | undefined;
 
-  const col = db.collection("saved_albums");
+  const col = db.collection(COLLECTIONS.ALBUMS);
 
   if (ids.length > 0) {
     // ids指定時はidsのアルバムを全件取得、ページネーション・limit無視
@@ -54,7 +54,7 @@ export const refreshAlbums = async (req: Request, res: Response) => {
     throw new ValidationError("albumIds is required and cannot be empty.");
   }
 
-  const col = db.collection("saved_albums");
+  const col = db.collection(COLLECTIONS.ALBUMS);
 
   const snapshot = await col.get();
   const cached: Record<string, Album> = {};
@@ -82,6 +82,7 @@ export const refreshAlbums = async (req: Request, res: Response) => {
     releaseDate: a.release_date,
     totalTracks: a.total_tracks,
     albumType: a.album_type,
+    popularity: a.popularity,
   }));
 
   const result = classifyItems({

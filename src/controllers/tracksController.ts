@@ -6,9 +6,9 @@ import {
   getSeveralArtists,
   getUsersSavedTracks,
 } from "../lib/spotify";
-import { Track } from "../types/tracks";
+import { SavedTrack } from "../types/tracks";
 import { classifyItems, toCountResponse } from "../services/classifyItems";
-import { db } from "../lib/firestore";
+import { COLLECTIONS, db } from "../lib/firestore";
 import { Artist } from "../types/artists";
 
 export const getTracks = async (req: Request, res: Response) => {
@@ -17,7 +17,7 @@ export const getTracks = async (req: Request, res: Response) => {
   const cursorAddedAt = req.query.cursorAddedAt as string | undefined;
 
   let query = db
-    .collection("saved_tracks")
+    .collection(COLLECTIONS.SAVED_TRACKS)
     .orderBy("addedAt")
     .orderBy("id")
     .limit(limit);
@@ -27,14 +27,14 @@ export const getTracks = async (req: Request, res: Response) => {
   }
 
   const snapshot = await query.get();
-  const tracks = snapshot.docs.map((doc) => doc.data() as Track);
+  const tracks = snapshot.docs.map((doc) => doc.data() as SavedTrack);
 
   // 次ページ用のカーソル
   const last = tracks[tracks.length - 1];
   const nextCursor = last ? { id: last.id, addedAt: last.addedAt } : undefined;
 
   // 総数
-  const totalSnap = await db.collection("saved_tracks").count().get();
+  const totalSnap = await db.collection(COLLECTIONS.SAVED_TRACKS).count().get();
   const total = totalSnap.data().count;
 
   return res.json({
@@ -51,10 +51,10 @@ export async function refreshTracks(req: Request, res: Response) {
     force?: boolean;
   };
 
-  const col = db.collection("saved_tracks");
+  const col = db.collection(COLLECTIONS.SAVED_TRACKS);
 
   const apiTracks = await getUsersSavedTracks(token);
-  const apiItems: Track[] = apiTracks.map((t) => ({
+  const apiItems: SavedTrack[] = apiTracks.map((t) => ({
     id: t.track.id,
     name: t.track.name,
     artists: t.track.artists.map((artist) => ({
@@ -73,13 +73,13 @@ export async function refreshTracks(req: Request, res: Response) {
 
   // Firestoreから現在のキャッシュを取得
   const snapshot = await col.get();
-  const cached: Record<string, Track> = {};
+  const cached: Record<string, SavedTrack> = {};
   snapshot.docs.forEach((doc) => {
-    if (doc.exists) cached[doc.id] = doc.data() as Track;
+    if (doc.exists) cached[doc.id] = doc.data() as SavedTrack;
   });
 
   // 差分判定
-  const result = classifyItems<Track>({
+  const result = classifyItems<SavedTrack>({
     apiItems,
     cached,
     idSelector: (item) => item.id,
@@ -103,7 +103,7 @@ export async function refreshTracks(req: Request, res: Response) {
   ]);
 
   // アーティストのキャッシュを全件取得
-  const aCol = db.collection("saved_artists");
+  const aCol = db.collection(COLLECTIONS.ARTISTS);
   const aSnapshot = await aCol.get();
   const cachedArtists: Record<string, Artist> = {};
   aSnapshot.docs.forEach((doc) => {

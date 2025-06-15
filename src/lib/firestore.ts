@@ -7,6 +7,14 @@ if (!getApps().length) {
   initializeApp();
 }
 
-const db: Firestore = getFirestore();
+export const db: Firestore = getFirestore();
 
-export { db };
+export const COLLECTIONS = {
+  SAVED_TRACKS: "savedTracks",
+  ALBUMS: "albums",
+  ALBUM_TRACKS: "albumTracks",
+  ARTISTS: "artists",
+  FOLLOWING_ARTISTS: "followingArtists",
+  PLAYLISTS: "playlists",
+  PLAYLIST_TRACKS: "playlistTracks",
+} as const;

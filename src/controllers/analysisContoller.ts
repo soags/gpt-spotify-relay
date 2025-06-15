@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
-import { db } from "../lib/firestore";
+import { COLLECTIONS, db } from "../lib/firestore";
 
 export const getGenreAnalysis = async (req: Request, res: Response) => {
-  const col = db.collection("saved_artists");
+  const col = db.collection(COLLECTIONS.ARTISTS);
   const snapshot = await col.get();
 
   if (snapshot.empty) {

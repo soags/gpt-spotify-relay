@@ -2,7 +2,7 @@
 
 import { Request, Response } from "express";
 import { getAccessToken, getFollowedArtists } from "../lib/spotify";
-import { db } from "../lib/firestore";
+import { COLLECTIONS, db } from "../lib/firestore";
 import { FollowingArtist } from "../types/artists";
 import { classifyItems, toCountResponse } from "../services/classifyItems";
 
@@ -12,7 +12,7 @@ export const getFollowing = async (req: Request, res: Response) => {
   const cursorFollowedAt = req.query.cursorFollowedAt as string | undefined;
 
   let query = db
-    .collection("following_artists")
+    .collection(COLLECTIONS.FOLLOWING_ARTISTS)
     .orderBy("followedAt")
     .orderBy("id")
     .limit(limit);
@@ -31,7 +31,10 @@ export const getFollowing = async (req: Request, res: Response) => {
     : undefined;
 
   // 総数
-  const totalSnap = await db.collection("following_artists").count().get();
+  const totalSnap = await db
+    .collection(COLLECTIONS.FOLLOWING_ARTISTS)
+    .count()
+    .get();
   const total = totalSnap.data().count;
 
   return res.json({
@@ -48,7 +51,7 @@ export const refreshFollowing = async (req: Request, res: Response) => {
     force?: boolean;
   };
 
-  const col = db.collection("following_artists");
+  const col = db.collection(COLLECTIONS.FOLLOWING_ARTISTS);
   const followedAt = new Date().toISOString();
 
   const apiArtists = await getFollowedArtists(token);
@@ -57,6 +60,7 @@ export const refreshFollowing = async (req: Request, res: Response) => {
     name: a.name,
     genres: a.genres,
     popularity: a.popularity,
+    followers: a.followers.total,
     followedAt,
   }));
 
