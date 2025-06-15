@@ -4,16 +4,17 @@ import { http } from "@google-cloud/functions-framework";
 import express from "express";
 import { spotifyRouter } from "./routes/spotifyRouter";
 import { auth } from "./middleware/auth";
-import { ping } from "./middleware/ping";
 import { errorHandler } from "./middleware/errorHandler";
 
 const app = express();
 
 app.use(express.json());
 
-app.use(ping);
-
 app.use(auth);
+
+app.use("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
 
 app.use("/spotify", spotifyRouter);
 
