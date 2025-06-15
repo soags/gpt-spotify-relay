@@ -77,7 +77,7 @@ export const refreshFollowing = async (req: Request, res: Response) => {
     apiItems,
     cached,
     idSelector: (a) => a.id,
-    equalsKeys: ["name", "genres", "popularity", "followedAt"],
+    equalsKeys: ["name", "genres", "popularity"],
     force,
   });
 

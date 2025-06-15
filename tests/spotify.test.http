@@ -16,10 +16,6 @@ POST {{baseUrl}}/tracks/refresh
 X-API-KEY: {{apiKey}}
 Content-Type: application/json
 
-{
-  "force": true
-}
-
 ### =========================================================
 
 ### Following Get
