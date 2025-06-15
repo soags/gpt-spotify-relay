@@ -31,3 +31,13 @@ export class NotSupportedError extends Error {
     Object.setPrototypeOf(this, NotSupportedError.prototype);
   }
 }
+
+export type ErrorResponse = {
+  message: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  details?: Record<string, any>;
+};
+
+export type ValidationErrorResponse = {
+  message: string;
+};

@@ -1,0 +1,81 @@
+@apiKey = {{$dotenv API_KEY}}
+@taskId = LtOOwzE1sha7buWsoMEe
+@ideaId = OYCP0GXyo7jhpnZIedsS
+### Create Task
+POST http://localhost:8080/vault/tasks
+X-API-KEY: {{apiKey}}
+Content-Type: application/json
+
+{
+  "title": "家計簿のZodバリデーション設計",
+  "status": "todo",
+  "dueDate": "2025-06-30T23:59:59.000Z",
+  "tags": ["notion", "zod", "vault"]
+}
+
+### List Tasks
+GET http://localhost:8080/vault/tasks
+X-API-KEY: {{apiKey}}
+
+### Get Task by ID
+GET http://localhost:8080/vault/tasks/{{taskId}}
+X-API-KEY: {{apiKey}}
+
+### Update Task
+PATCH http://localhost:8080/vault/tasks/{{taskId}}
+X-API-KEY: {{apiKey}}
+Content-Type: application/json
+
+{
+  "status": "done",
+  "tags": ["zod", "完了"]
+}
+
+### Delete Task
+DELETE http://localhost:8080/vault/tasks/{{taskId}}
+X-API-KEY: {{apiKey}}
+
+
+### Create Idea
+POST http://localhost:8080/vault/ideas
+X-API-KEY: {{apiKey}}
+Content-Type: application/json
+
+{
+  "title": "ContextVault次世代構想",
+  "data": {
+    "focus": "構造化と柔軟性の両立",
+    "notes": [
+      "Zodバリデーションで定型スキーマ対応",
+      "非定型構造は自由に保存"
+    ]
+  },
+  "notes": [
+      "Zodバリデーションで定型スキーマ対応",
+      "非定型構造は自由に保存"
+  ]
+}
+
+### List Ideas
+GET http://localhost:8080/vault/ideas
+X-API-KEY: {{apiKey}}
+
+### Get Idea by ID
+GET http://localhost:8080/vault/ideas/{{ideaId}}
+X-API-KEY: {{apiKey}}
+
+### Update Idea
+PATCH http://localhost:8080/vault/ideas/{{ideaId}}
+X-API-KEY: {{apiKey}}
+Content-Type: application/json
+
+{
+  "notes": [
+    "GPT連携をさらに柔軟に",
+    "OpenAPI生成と相性良くする"
+  ]
+}
+
+### Delete Idea
+DELETE http://localhost:8080/vault/ideas/{{ideaId}}
+X-API-KEY: {{apiKey}}

@@ -2,14 +2,19 @@
 
 import { Request, Response } from "express";
 import {
-  CreateVaultEntryResponse,
+  CreateVaultResponse,
+  DeleteVaultResponse,
   IdeaData,
+  IdeaDataSchema,
   IdeaEntry,
   TaskData,
+  TaskDataSchema,
   TaskEntry,
+  UpdateVaultResponse,
 } from "../../types/vault/vault";
 import { NotFoundError } from "../../types/error";
 import * as vaultStore from "../../services/vaultStore";
+import z from "zod/v4";
 
 export async function listTasks(
   req: Request<never, TaskEntry[]>,
@@ -34,10 +39,18 @@ export async function getTask(
 }
 
 export async function createTask(
-  req: Request<never, CreateVaultEntryResponse, TaskData>,
-  res: Response<CreateVaultEntryResponse>
+  req: Request<never, CreateVaultResponse, TaskData>,
+  res: Response<CreateVaultResponse>
 ): Promise<void> {
   const payload = req.body;
+
+  const result = TaskDataSchema.safeParse(payload);
+  if (!result.success) {
+    res.status(400).json({
+      message: z.prettifyError(result.error),
+    });
+    return;
+  }
 
   const id = await vaultStore.addTask(payload);
 
@@ -45,13 +58,21 @@ export async function createTask(
 }
 
 export async function updateTask(
-  req: Request<{ id: string }, void, Partial<TaskData>>,
-  res: Response<void>
+  req: Request<{ id: string }, UpdateVaultResponse, Partial<TaskData>>,
+  res: Response<UpdateVaultResponse>
 ): Promise<void> {
   const id = req.params.id;
-  const partialData = req.body;
+  const payload = req.body;
 
-  await vaultStore.updateTask(id, partialData);
+  const result = TaskDataSchema.partial().safeParse(payload);
+  if (!result.success) {
+    res.status(400).json({
+      message: z.prettifyError(result.error),
+    });
+    return;
+  }
+
+  await vaultStore.updateTask(id, payload);
 
   res.sendStatus(204);
 }
@@ -59,7 +80,7 @@ export async function updateTask(
 export async function deleteTask(
   req: Request<{ id: string }>,
   res: Response<void>
-): Promise<void> {
+): Promise<DeleteVaultResponse> {
   const id = req.params.id;
 
   await vaultStore.deleteTask(id);
@@ -90,10 +111,18 @@ export async function getIdea(
 }
 
 export async function createIdea(
-  req: Request<never, CreateVaultEntryResponse, IdeaData>,
-  res: Response<CreateVaultEntryResponse>
+  req: Request<never, CreateVaultResponse, IdeaData>,
+  res: Response<CreateVaultResponse>
 ): Promise<void> {
   const payload = req.body;
+
+  const result = IdeaDataSchema.safeParse(payload);
+  if (!result.success) {
+    res.status(400).json({
+      message: z.prettifyError(result.error),
+    });
+    return;
+  }
 
   const id = await vaultStore.addIdea(payload);
 
@@ -101,20 +130,28 @@ export async function createIdea(
 }
 
 export async function updateIdea(
-  req: Request<{ id: string }, void, Partial<IdeaData>>,
-  res: Response<void>
+  req: Request<{ id: string }, UpdateVaultResponse, Partial<IdeaData>>,
+  res: Response<UpdateVaultResponse>
 ): Promise<void> {
   const id = req.params.id;
-  const partialData = req.body;
+  const payload = req.body;
 
-  await vaultStore.updateIdea(id, partialData);
+  const result = IdeaDataSchema.safeParse(payload);
+  if (!result.success) {
+    res.status(400).json({
+      message: z.prettifyError(result.error),
+    });
+    return;
+  }
+
+  await vaultStore.updateIdea(id, payload);
 
   res.sendStatus(204);
 }
 
 export async function deleteIdea(
   req: Request<{ id: string }>,
-  res: Response<void>
+  res: Response<DeleteVaultResponse>
 ): Promise<void> {
   const id = req.params.id;
 
