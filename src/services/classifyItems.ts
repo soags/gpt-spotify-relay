@@ -41,19 +41,17 @@ export function classifyItems<T>({
 
     // キャッシュとの変化点をチェック
     const isChanged =
-      !force &&
-      Boolean(cached) &&
-      shallowEqualByKeys(apiItem, cachedItem, equalsKeys);
+      force || !cached || !shallowEqualByKeys(apiItem, cachedItem, equalsKeys);
 
     if (!cachedItem) {
       // キャッシュに存在しない場合は新規
       createItems.push(apiItem);
     } else if (isChanged) {
-      // キャッシュと変化点がない場合はスキップ
-      skipItems.push(apiItem);
-    } else {
       // キャッシュと変化点がある場合は更新
       refreshItems.push(apiItem);
+    } else {
+      // キャッシュと変化点がない場合はスキップ
+      skipItems.push(apiItem);
     }
   });
 

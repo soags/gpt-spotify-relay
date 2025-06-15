@@ -2,7 +2,7 @@
 
 import { http } from "@google-cloud/functions-framework";
 import express from "express";
-import { spotifyRouter } from "./routes";
+import { spotifyRouter } from "./routes/spotifyRouter";
 import { auth } from "./middleware/auth";
 import { ping } from "./middleware/ping";
 import { errorHandler } from "./middleware/errorHandler";

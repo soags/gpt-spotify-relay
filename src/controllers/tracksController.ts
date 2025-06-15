@@ -1,10 +1,15 @@
 // src/controllers/tracksController.ts
 
 import { Request, Response } from "express";
-import { getAccessToken, getUsersSavedTracks } from "../lib/spotify";
+import {
+  getAccessToken,
+  getSeveralArtists,
+  getUsersSavedTracks,
+} from "../lib/spotify";
 import { Track } from "../types/tracks";
 import { classifyItems, toCountResponse } from "../services/classifyItems";
 import { db } from "../lib/firestore";
+import { Artist } from "../types/artists";
 
 export const getTracks = async (req: Request, res: Response) => {
   const limit = Number(req.query.limit ?? 100);
@@ -97,5 +102,47 @@ export async function refreshTracks(req: Request, res: Response) {
     ...result.deletedIds.map((id) => col.doc(id).delete()),
   ]);
 
-  return res.json(toCountResponse(result));
+  // アーティストのキャッシュを全件取得
+  const aCol = db.collection("saved_artists");
+  const aSnapshot = await aCol.get();
+  const cachedArtists: Record<string, Artist> = {};
+  aSnapshot.docs.forEach((doc) => {
+    if (doc.exists) cachedArtists[doc.id] = doc.data() as Artist;
+  });
+  console.log(`Cached artists count: ${Object.keys(cachedArtists).length}`);
+
+  // キャッシュにないアーティストIDを抽出
+  const artistIds: string[] = [];
+  [...result.createItems, ...result.refreshItems].forEach((item) => {
+    item.artists.forEach((artist) => {
+      if (!cachedArtists[artist.id]) {
+        artistIds.push(artist.id);
+      }
+    });
+  });
+  console.log(
+    `Artists to fetch: ${artistIds.length} (from ${result.createItems.length} new tracks)`
+  );
+
+  // キャッシュにないアーティストを50件ずつ取得
+  const artists = [];
+  for (let i = 0; i < artistIds.length; i += 50) {
+    const ids = artistIds.slice(i, i + 50);
+
+    console.log(`Fetching artists ${i + 1} to ${i + ids.length}`);
+    const result = await getSeveralArtists(ids, token);
+    artists.push(...result);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  // Firestoreに保存
+  console.log(`Saving ${artists.length} new artists to Firestore`);
+  await Promise.all(artists.map((artist) => aCol.doc(artist.id).set(artist)));
+
+  return res.json({
+    ...toCountResponse(result),
+    artists: {
+      created: artists.length,
+    },
+  });
 }

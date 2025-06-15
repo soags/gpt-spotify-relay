@@ -52,6 +52,7 @@ export const refreshAlbums = async (req: Request, res: Response) => {
     const ids = toFetch.slice(i, i + 20);
     const result = await getSeveralAlbums(ids, token);
     albums.push(...result);
+    await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
   const apiItems: Album[] = albums.map((a) => ({

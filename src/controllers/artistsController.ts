@@ -52,6 +52,7 @@ export async function refreshArtists(req: Request, res: Response) {
     const ids = toFetch.slice(i, i + 50);
     const result = await getSeveralArtists(ids, token);
     artists.push(...result);
+    await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
   const apiItems: Artist[] = artists.map((a) => ({
