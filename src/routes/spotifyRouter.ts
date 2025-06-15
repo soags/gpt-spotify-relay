@@ -21,6 +21,14 @@ spotifyRouter.post("/following/refresh", followingController.refreshFollowing);
 
 spotifyRouter.get("/playlists", playlistsController.getPlaylists);
 spotifyRouter.post("/playlists/refresh", playlistsController.refreshPlaylists);
+spotifyRouter.get(
+  "/playlists/:playlistId",
+  playlistsController.getPlaylistTracks
+);
+spotifyRouter.post(
+  "/playlists/:playlistId/refresh",
+  playlistsController.refreshPlaylistTracks
+);
 
 spotifyRouter.get("/albums", albumsController.getAlbums);
 spotifyRouter.post("/albums/refresh", albumsController.refreshAlbums);

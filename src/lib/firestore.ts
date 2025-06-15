@@ -17,4 +17,5 @@ export const COLLECTIONS = {
   FOLLOWING_ARTISTS: "followingArtists",
   PLAYLISTS: "playlists",
   PLAYLIST_TRACKS: "playlistTracks",
+  PLAYLIST_TRACKS__TRACKS: "tracks",
 } as const;
